@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->trustProxies(at: env('TRUSTED_PROXIES', ''));
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('app:check-new-episodes')->daily();
