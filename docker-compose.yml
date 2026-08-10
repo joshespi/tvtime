@@ -1,0 +1,143 @@
+# Shared env for the PHP containers (app + queue + scheduler). Kept in one place so
+# none of them can drift onto a different DB/mail/API config than the others.
+x-app-env: &app-env
+  TMDB_API_KEY: ${TMDB_API_KEY}
+  TRAKT_CLIENT_ID: ${TRAKT_CLIENT_ID}
+  DONATE_BTC_ADDRESS: ${DONATE_BTC_ADDRESS:-}
+  APP_URL: ${APP_URL}
+  APP_NAME: ${APP_NAME}
+  APP_ENV: ${APP_ENV}
+  APP_KEY: ${APP_KEY}
+  APP_DEBUG: ${APP_DEBUG}
+  LOG_CHANNEL: ${LOG_CHANNEL}
+  LOG_STACK: ${LOG_STACK}
+  LOG_LEVEL: ${LOG_LEVEL}
+  DB_CONNECTION: mariadb
+  DB_HOST: tv-tracker-db
+  DB_PORT: 3306
+  SESSION_DRIVER: database
+  QUEUE_CONNECTION: database
+  CACHE_STORE: database
+  DB_DATABASE: ${DB_DATABASE}
+  DB_USERNAME: ${DB_USERNAME}
+  DB_PASSWORD: ${DB_PASSWORD}
+  MAIL_MAILER: ${MAIL_MAILER:-log}
+  MAIL_HOST: ${MAIL_HOST:-smtp-relay.brevo.com}
+  MAIL_PORT: ${MAIL_PORT:-587}
+  MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+  MAIL_USERNAME: ${MAIL_USERNAME}
+  MAIL_PASSWORD: ${MAIL_PASSWORD}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+  MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+  VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+  VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+  VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+  TRUSTED_PROXIES: ${TRUSTED_PROXIES}
+
+# Shared service definition for the three PHP containers. They run the same image
+# off the same source mount and differ only in what they execute.
+x-app-service: &app-service
+  build:
+    context: .
+    dockerfile: docker/php/Dockerfile
+  volumes:
+    - ./src:/var/www/html
+  environment:
+    <<: *app-env
+  restart: always
+  networks:
+    - laravel
+
+services:
+  app:
+    <<: *app-service
+    depends_on:
+      db:
+        condition: service_healthy
+    container_name: tv-tracker-app
+    healthcheck:
+      # Flips healthy only once entrypoint.sh has finished composer install
+      # + migrate, so queue/scheduler (which depend on this) don't start
+      # hitting tables that don't exist yet.
+      test: ["CMD", "test", "-f", "/var/www/html/storage/framework/migrated"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  # Runs the daily episode-check + notification dispatch on Laravel's scheduler
+  # so it keeps firing without depending on a host crontab.
+  scheduler:
+    <<: *app-service
+    depends_on:
+      app:
+        condition: service_healthy
+    container_name: tv-tracker-scheduler
+    # Runs as www-data (not the container-default root) so any files it
+    # writes under storage/ stay writable by the php-fpm workers, which are
+    # also www-data. Safe to start before app's entrypoint chown finishes
+    # since depends_on waits for app's healthcheck.
+    user: www-data
+    entrypoint:
+      - sh
+      - -c
+      - exec php artisan schedule:work
+
+  # Processes queued jobs (TMDB/Trakt sync, notification sends) off the request
+  # cycle so external API calls never block a user's page load.
+  queue:
+    <<: *app-service
+    depends_on:
+      app:
+        condition: service_healthy
+    container_name: tv-tracker-queue
+    # See scheduler's comment above — same reasoning applies here.
+    user: www-data
+    entrypoint:
+      - sh
+      - -c
+      - exec php artisan queue:work --sleep=3 --tries=3
+
+  node:
+    image: node:24.18-alpine
+    working_dir: /app
+    volumes:
+      - ./src:/app
+    restart: "no"
+
+  nginx:
+    image: nginx:alpine
+    container_name: tv-tracker-nginx
+    restart: always
+    ports:
+      - "8081:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - laravel
+
+  db:
+    image: mariadb:11.8
+    container_name: tv-tracker-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel}
+      MYSQL_USER: ${DB_USERNAME:-laravel}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - ./db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - laravel
+
+networks:
+  laravel:
+    driver: bridge

@@ -1,0 +1,32 @@
+<section>
+    <header>
+        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+            {{ __('Push Notifications') }}
+        </h2>
+
+        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            {{ __("Get a browser notification when a show you're tracking has a new episode air.") }}
+        </p>
+    </header>
+
+    <div class="mt-4"
+         x-data="pushNotifications(@js(config('webpush.vapid.public_key')), @js(route('push-subscriptions.store')), @js(route('push-subscriptions.destroy')))">
+        <template x-if="!supported">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ __('Not supported in this browser. On iPhone/iPad, add this app to your Home Screen first (Safari share menu → Add to Home Screen), then try again from there.') }}
+            </p>
+        </template>
+
+        <template x-if="supported">
+            <div class="flex items-center gap-4">
+                <button type="button" @click="toggle()" :disabled="loading"
+                        class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition disabled:opacity-50"
+                        :class="subscribed ? 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600' : 'bg-indigo-600 text-white hover:bg-indigo-500'">
+                    <span x-show="!loading" x-text="subscribed ? 'Disable notifications' : 'Enable notifications'"></span>
+                    <span x-show="loading">Working&hellip;</span>
+                </button>
+                <p x-show="error" x-text="error" class="text-sm text-red-600 dark:text-red-400"></p>
+            </div>
+        </template>
+    </div>
+</section>
