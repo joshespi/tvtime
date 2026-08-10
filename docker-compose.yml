@@ -110,7 +110,7 @@ services:
     container_name: tv-tracker-nginx
     restart: always
     ports:
-      - "8081:80"
+      - "8085:80"
     volumes:
       - ./src:/var/www/html
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
