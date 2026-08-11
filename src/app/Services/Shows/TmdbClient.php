@@ -2,12 +2,13 @@
 
 namespace App\Services\Shows;
 
+use App\Support\TmdbImage;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class TmdbClient implements ProviderClient
+class TmdbClient
 {
     private string $baseUrl;
 
@@ -51,7 +52,7 @@ class TmdbClient implements ProviderClient
     /**
      * Combined show+movie search via TMDB's /search/multi. Person results are dropped.
      *
-     * @return array<int, array{type: string, id: string, title: string, poster_path: ?string, date: ?string, overview: ?string, vote_average: ?float, genres: array<int, string>}>
+     * @return array<int, array{type: string, id: string, title: string, poster_path: ?string, poster_url: ?string, date: ?string, overview: ?string, vote_average: ?float, genres: array<int, string>}>
      */
     public function searchMulti(string $query): array
     {
@@ -71,24 +72,85 @@ class TmdbClient implements ProviderClient
 
         return collect($response->json('results', []))
             ->filter(fn (array $result) => in_array($result['media_type'] ?? null, ['tv', 'movie'], true))
-            ->map(function (array $result) {
-                $isMovie = $result['media_type'] === 'movie';
-
-                return [
-                    'type' => $isMovie ? 'movie' : 'show',
-                    'id' => (string) $result['id'],
-                    'title' => $isMovie ? $result['title'] : $result['name'],
-                    'poster_path' => $result['poster_path'] ?? null,
-                    'date' => ($isMovie ? $result['release_date'] : $result['first_air_date']) ?: null,
-                    'overview' => $result['overview'] ?: null,
-                    'vote_average' => $result['vote_average'] ?? null,
-                    // Same limitation as search() above: names need a
-                    // separate /genre/list call, so this fills in once stored.
-                    'genres' => [],
-                ];
-            })
+            ->map(fn (array $result) => $this->mapResult($result, $result['media_type'] === 'movie' ? 'movie' : 'show'))
             ->values()
             ->all();
+    }
+
+    /**
+     * Recommendations for several seed titles at once. This runs inline while the
+     * dashboard renders, so the seeds go out concurrently rather than one after
+     * another. Recommendations are a nice-to-have, so a seed that fails degrades
+     * to an empty list instead of failing the page.
+     *
+     * @param  array<int, array{type: string, id: string}>  $seeds
+     * @return array<int, array<int, array{type: string, id: string, title: string, poster_path: ?string, poster_url: ?string, date: ?string, overview: ?string, vote_average: ?float, genres: array<int, string>}>> Results per seed, in $seeds order.
+     */
+    public function recommendations(array $seeds): array
+    {
+        if ($seeds === []) {
+            return [];
+        }
+
+        $responses = Http::pool(fn ($pool) => collect($seeds)
+            ->map(fn (array $seed) => $pool
+                ->baseUrl($this->baseUrl)
+                ->acceptJson()
+                ->connectTimeout(2)
+                ->timeout(5)
+                ->get($this->recommendationsPath($seed), ['api_key' => $this->key]))
+            ->all());
+
+        return collect($seeds)
+            ->map(function (array $seed, int $index) use ($responses) {
+                $response = $responses[$index] ?? null;
+
+                if (! $response instanceof Response || $response->failed()) {
+                    Log::warning('TMDB recommendations failed', ['seed' => $seed]);
+
+                    return [];
+                }
+
+                return collect($response->json('results', []))
+                    ->map(fn (array $result) => $this->mapResult($result, $seed['type']))
+                    ->values()
+                    ->all();
+            })
+            ->all();
+    }
+
+    /** @param  array{type: string, id: string}  $seed */
+    private function recommendationsPath(array $seed): string
+    {
+        return $seed['type'] === 'movie'
+            ? "/movie/{$seed['id']}/recommendations"
+            : "/tv/{$seed['id']}/recommendations";
+    }
+
+    /**
+     * Shared shape for search/recommendation results, poster URL included so that
+     * every consumer of a TMDB result can render one without re-deriving it.
+     * Genres are always empty here — these endpoints only carry genre_ids, so
+     * names fill in once stored.
+     *
+     * @return array{type: string, id: string, title: string, poster_path: ?string, poster_url: ?string, date: ?string, overview: ?string, vote_average: ?float, genres: array<int, string>}
+     */
+    private function mapResult(array $result, string $type): array
+    {
+        $isMovie = $type === 'movie';
+        $posterPath = $result['poster_path'] ?? null;
+
+        return [
+            'type' => $type,
+            'id' => (string) $result['id'],
+            'title' => $isMovie ? $result['title'] : $result['name'],
+            'poster_path' => $posterPath,
+            'poster_url' => TmdbImage::url($posterPath),
+            'date' => ($isMovie ? $result['release_date'] : $result['first_air_date']) ?: null,
+            'overview' => $result['overview'] ?: null,
+            'vote_average' => $result['vote_average'] ?? null,
+            'genres' => [],
+        ];
     }
 
     public function movie(string $id): ?array

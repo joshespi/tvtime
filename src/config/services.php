@@ -41,9 +41,4 @@ return [
         'image_base_url' => 'https://image.tmdb.org/t/p',
     ],
 
-    'trakt' => [
-        'client_id' => env('TRAKT_CLIENT_ID'),
-        'base_url' => 'https://api.trakt.tv',
-    ],
-
 ];

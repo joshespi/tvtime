@@ -33,7 +33,7 @@ class CheckMovieReleasesTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $movie = Movie::factory()->create(['tmdb_id' => '603', 'resolved_source' => 'tmdb', 'release_date' => today()]);
+        $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()]);
         UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id, 'watched_at' => null]);
 
         $this->fakeTmdbRefresh('603');
@@ -53,7 +53,7 @@ class CheckMovieReleasesTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $movie = Movie::factory()->create(['tmdb_id' => '603', 'resolved_source' => 'tmdb', 'release_date' => today()->addWeek()]);
+        $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()->addWeek()]);
         UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id, 'watched_at' => null]);
 
         Http::fake([
@@ -75,7 +75,7 @@ class CheckMovieReleasesTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $movie = Movie::factory()->create(['tmdb_id' => '603', 'resolved_source' => 'tmdb', 'release_date' => today()]);
+        $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()]);
         UserMovie::factory()->watched()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
 
         $this->fakeTmdbRefresh('603');
@@ -90,7 +90,7 @@ class CheckMovieReleasesTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $movie = Movie::factory()->create(['tmdb_id' => '603', 'resolved_source' => 'tmdb', 'release_date' => today()]);
+        $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()]);
         UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id, 'watched_at' => null]);
 
         NotificationSent::factory()->create([
@@ -111,7 +111,7 @@ class CheckMovieReleasesTest extends TestCase
     {
         Notification::fake();
 
-        Movie::factory()->create(['tmdb_id' => '603', 'resolved_source' => 'tmdb', 'release_date' => today()]);
+        Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()]);
 
         Http::fake();
 
@@ -126,7 +126,7 @@ class CheckMovieReleasesTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $movie = Movie::factory()->create(['tmdb_id' => '603', 'resolved_source' => 'tmdb', 'release_date' => today()]);
+        $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()]);
         UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id, 'watched_at' => null]);
 
         Http::fake(['api.themoviedb.org/3/movie/*' => Http::response(null, 500)]);

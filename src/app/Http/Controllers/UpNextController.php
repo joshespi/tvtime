@@ -2,13 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Episode;
+use App\Models\Show;
+use App\Models\UserShow;
 use App\Services\Catalog\CatalogSearchService;
+use App\Services\Catalog\RecommendationService;
+use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class UpNextController extends Controller
 {
-    public function __construct(private readonly CatalogSearchService $catalog) {}
+    public function __construct(
+        private readonly CatalogSearchService $catalog,
+        private readonly RecommendationService $recommendations,
+    ) {}
 
     /**
      * Earliest unwatched aired episode per actively-watched show, plus the full
@@ -18,19 +27,25 @@ class UpNextController extends Controller
     {
         $userId = $request->user()->id;
 
-        $upNext = $request->user()->shows()
+        // Both episode selections are eager-loaded in one pass: `episodes` is
+        // narrowed to the single next unwatched-aired one, and the next upcoming
+        // one comes from its own relation so the two can't overwrite each other.
+        $watchingShows = $request->user()->shows()
             ->where('status', 'watching')
-            ->with(['show.episodes' => fn ($query) => $query->unwatchedAiredFor($userId)
-                ->orderBy('season')
-                ->orderBy('episode_number')
-                ->limit(1),
+            ->with([
+                'show.episodes' => fn ($query) => $query
+                    ->unwatchedAiredFor($userId)
+                    ->orderBy('season')
+                    ->orderBy('episode_number')
+                    ->limit(1),
+                'show.nextUpcomingEpisode',
             ])
-            ->get()
-            ->map(fn ($userShow) => [
-                'show' => $userShow->show,
-                'episode' => $userShow->show->episodes->first(),
-            ])
-            ->filter(fn ($entry) => $entry['episode'] !== null)
+            ->get();
+
+        $upNext = $this->pairWithEpisode($watchingShows, fn (UserShow $userShow) => $userShow->show->episodes->first());
+
+        $airingSoon = $this->pairWithEpisode($watchingShows, fn (UserShow $userShow) => $userShow->show->nextUpcomingEpisode)
+            ->sortBy(fn (array $entry) => $entry['episode']->air_date)
             ->values();
 
         $movieWatchlist = $request->user()->movies()
@@ -42,8 +57,24 @@ class UpNextController extends Controller
 
         return view('up-next', [
             'upNext' => $upNext,
+            'airingSoon' => $airingSoon,
             'movieWatchlist' => $movieWatchlist,
+            'recommendations' => $this->recommendations->forUser($request->user()),
             ...$this->catalog->forRequest($request),
         ]);
+    }
+
+    /**
+     * Shows paired with one already-loaded episode, dropping shows that have none.
+     *
+     * @param  Collection<int, UserShow>  $watchingShows
+     * @return Collection<int, array{show: Show, episode: Episode}>
+     */
+    private function pairWithEpisode(Collection $watchingShows, Closure $episode): Collection
+    {
+        return $watchingShows
+            ->map(fn (UserShow $userShow) => ['show' => $userShow->show, 'episode' => $episode($userShow)])
+            ->filter(fn (array $entry) => $entry['episode'] !== null)
+            ->values();
     }
 }

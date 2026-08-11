@@ -9,6 +9,8 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
+        // App\Support\ButtonStyle holds the button palette as PHP constants.
+        './app/Support/*.php',
     ],
 
     theme: {

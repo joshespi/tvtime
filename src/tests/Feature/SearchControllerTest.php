@@ -64,7 +64,6 @@ class SearchControllerTest extends TestCase
 
         $response = $this->actingAs($user)->post('/search', [
             'type' => 'show',
-            'source' => 'tmdb',
             'external_id' => '1396',
         ]);
 
@@ -87,8 +86,8 @@ class SearchControllerTest extends TestCase
             ]),
         ]);
 
-        $this->actingAs($user)->post('/search', ['type' => 'show', 'source' => 'tmdb', 'external_id' => '1396']);
-        $this->actingAs($user)->post('/search', ['type' => 'show', 'source' => 'tmdb', 'external_id' => '1396']);
+        $this->actingAs($user)->post('/search', ['type' => 'show', 'external_id' => '1396']);
+        $this->actingAs($user)->post('/search', ['type' => 'show', 'external_id' => '1396']);
 
         $this->assertDatabaseCount('user_shows', 1);
     }
@@ -97,14 +96,10 @@ class SearchControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Http::fake([
-            'api.themoviedb.org/3/tv/*' => Http::response(null, 404),
-            'api.trakt.tv/shows/*' => Http::response(null, 404),
-        ]);
+        Http::fake(['api.themoviedb.org/3/tv/*' => Http::response(null, 404)]);
 
         $response = $this->actingAs($user)->post('/search', [
             'type' => 'show',
-            'source' => 'tmdb',
             'external_id' => 'missing',
         ]);
 
@@ -127,7 +122,6 @@ class SearchControllerTest extends TestCase
 
         $response = $this->actingAs($user)->post('/search', [
             'type' => 'movie',
-            'source' => 'tmdb',
             'external_id' => '603',
         ]);
 
@@ -140,14 +134,10 @@ class SearchControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Http::fake([
-            'api.themoviedb.org/3/movie/*' => Http::response(null, 404),
-            'api.trakt.tv/movies/*' => Http::response(null, 404),
-        ]);
+        Http::fake(['api.themoviedb.org/3/movie/*' => Http::response(null, 404)]);
 
         $response = $this->actingAs($user)->post('/search', [
             'type' => 'movie',
-            'source' => 'tmdb',
             'external_id' => 'missing',
         ]);
 
@@ -161,10 +151,72 @@ class SearchControllerTest extends TestCase
 
         $response = $this->actingAs($user)->post('/search', [
             'type' => 'bogus',
-            'source' => 'tmdb',
             'external_id' => '1',
         ]);
 
         $response->assertSessionHasErrors('type');
+    }
+
+    public function test_store_returns_json_and_does_not_redirect_when_the_request_wants_json(): void
+    {
+        $user = User::factory()->create();
+
+        Http::fake([
+            'api.themoviedb.org/3/tv/1396/season/*' => Http::response(['episodes' => []]),
+            'api.themoviedb.org/3/tv/1396*' => Http::response([
+                'id' => 1396,
+                'name' => 'Breaking Bad',
+                'overview' => 'A chemistry teacher...',
+                'number_of_seasons' => 0,
+                'first_air_date' => '2008-01-20',
+            ]),
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/search', [
+            'type' => 'show',
+            'external_id' => '1396',
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['message' => 'Now tracking "Breaking Bad".']);
+        $this->assertDatabaseCount('user_shows', 1);
+    }
+
+    public function test_store_returns_a_json_error_when_the_show_is_not_found(): void
+    {
+        $user = User::factory()->create();
+
+        Http::fake(['api.themoviedb.org/3/tv/*' => Http::response(null, 404)]);
+
+        $response = $this->actingAs($user)->postJson('/search', [
+            'type' => 'show',
+            'external_id' => 'missing',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson(['message' => 'Could not find that show on TMDB.']);
+    }
+
+    public function test_store_returns_json_for_a_movie_when_the_request_wants_json(): void
+    {
+        $user = User::factory()->create();
+
+        Http::fake([
+            'api.themoviedb.org/3/movie/603*' => Http::response([
+                'id' => 603,
+                'title' => 'The Matrix',
+                'overview' => 'A hacker...',
+                'release_date' => '1999-03-31',
+            ]),
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/search', [
+            'type' => 'movie',
+            'external_id' => '603',
+        ]);
+
+        $response->assertOk();
+        $response->assertJson(['message' => 'Added "The Matrix" to your watchlist.']);
+        $this->assertDatabaseCount('user_movies', 1);
     }
 }

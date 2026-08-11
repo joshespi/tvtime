@@ -36,7 +36,7 @@ class CheckNewEpisodesTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $show = Show::factory()->create(['tmdb_id' => '1396', 'resolved_source' => 'tmdb']);
+        $show = Show::factory()->create(['tmdb_id' => '1396']);
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
         $episode = Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()]);
 
@@ -57,7 +57,7 @@ class CheckNewEpisodesTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $show = Show::factory()->create(['tmdb_id' => '1396', 'resolved_source' => 'tmdb']);
+        $show = Show::factory()->create(['tmdb_id' => '1396']);
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()->subDay()]);
 
@@ -73,7 +73,7 @@ class CheckNewEpisodesTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $show = Show::factory()->create(['tmdb_id' => '1396', 'resolved_source' => 'tmdb']);
+        $show = Show::factory()->create(['tmdb_id' => '1396']);
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'paused']);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()]);
 
@@ -89,7 +89,7 @@ class CheckNewEpisodesTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $show = Show::factory()->create(['tmdb_id' => '1396', 'resolved_source' => 'tmdb']);
+        $show = Show::factory()->create(['tmdb_id' => '1396']);
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
         $episode = Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()]);
 
@@ -111,7 +111,7 @@ class CheckNewEpisodesTest extends TestCase
     {
         Notification::fake();
 
-        Show::factory()->create(['tmdb_id' => '1396', 'resolved_source' => 'tmdb']);
+        Show::factory()->create(['tmdb_id' => '1396']);
 
         Http::fake();
 
@@ -126,7 +126,7 @@ class CheckNewEpisodesTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $show = Show::factory()->create(['tmdb_id' => '1396', 'resolved_source' => 'tmdb']);
+        $show = Show::factory()->create(['tmdb_id' => '1396']);
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()]);
 

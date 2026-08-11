@@ -34,7 +34,7 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
-        $results = $this->catalog->search($query)['results'];
+        $results = $this->catalog->search($query);
 
         return response()->json(
             collect($results)
@@ -44,27 +44,26 @@ class SearchController extends Controller
         );
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'type' => ['required', 'in:show,movie'],
-            'source' => ['required', 'in:tmdb,trakt'],
             'external_id' => ['required', 'string'],
         ]);
 
         if ($validated['type'] === 'movie') {
-            return $this->storeMovie($request, $validated['source'], $validated['external_id']);
+            return $this->storeMovie($request, $validated['external_id']);
         }
 
-        return $this->storeShow($request, $validated['source'], $validated['external_id']);
+        return $this->storeShow($request, $validated['external_id']);
     }
 
-    private function storeShow(Request $request, string $source, string $externalId): RedirectResponse
+    private function storeShow(Request $request, string $externalId): RedirectResponse|JsonResponse
     {
         try {
-            $show = $this->shows->store($source, $externalId);
+            $show = $this->shows->store($externalId);
         } catch (ShowNotFoundException) {
-            return back()->withErrors(['external_id' => 'Could not find that show on TMDB or Trakt.']);
+            return $this->respondError($request, 'Could not find that show on TMDB.');
         }
 
         UserShow::firstOrCreate([
@@ -74,15 +73,15 @@ class SearchController extends Controller
             'status' => 'watching',
         ]);
 
-        return redirect()->route('shows.index')->with('status', "Now tracking \"{$show->title}\".");
+        return $this->respondSuccess($request, "Now tracking \"{$show->title}\".", 'shows.index');
     }
 
-    private function storeMovie(Request $request, string $source, string $externalId): RedirectResponse
+    private function storeMovie(Request $request, string $externalId): RedirectResponse|JsonResponse
     {
         try {
-            $movie = $this->movies->store($source, $externalId);
+            $movie = $this->movies->store($externalId);
         } catch (MovieNotFoundException) {
-            return back()->withErrors(['external_id' => 'Could not find that movie on TMDB or Trakt.']);
+            return $this->respondError($request, 'Could not find that movie on TMDB.');
         }
 
         UserMovie::firstOrCreate([
@@ -90,6 +89,20 @@ class SearchController extends Controller
             'movie_id' => $movie->id,
         ]);
 
-        return redirect()->route('movies.index')->with('status', "Added \"{$movie->title}\" to your watchlist.");
+        return $this->respondSuccess($request, "Added \"{$movie->title}\" to your watchlist.", 'movies.index');
+    }
+
+    private function respondError(Request $request, string $message): RedirectResponse|JsonResponse
+    {
+        return $request->wantsJson()
+            ? response()->json(['message' => $message], 422)
+            : back()->withErrors(['external_id' => $message]);
+    }
+
+    private function respondSuccess(Request $request, string $message, string $route): RedirectResponse|JsonResponse
+    {
+        return $request->wantsJson()
+            ? response()->json(['message' => $message])
+            : redirect()->route($route)->with('status', $message);
     }
 }

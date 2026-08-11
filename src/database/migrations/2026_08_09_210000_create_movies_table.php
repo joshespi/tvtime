@@ -11,7 +11,8 @@ return new class extends Migration
         Schema::create('movies', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('tmdb_id')->nullable()->unique();
-            // A Trakt id is always the movie's slug (e.g. "the-matrix-1999"), never numeric.
+            // Dropped again by 2026_08_11_000001_drop_trakt_columns; kept here so
+            // already-migrated installs replay the same history.
             $table->string('trakt_id')->nullable()->unique();
             $table->string('title');
             $table->string('poster_path')->nullable();

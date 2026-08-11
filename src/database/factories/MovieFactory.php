@@ -16,7 +16,6 @@ class MovieFactory extends Factory
     {
         return [
             'tmdb_id' => fake()->unique()->numberBetween(1, 999999),
-            'trakt_id' => null,
             'title' => fake()->unique()->sentence(3),
             'poster_path' => '/poster.jpg',
             'overview' => fake()->paragraph(),
@@ -24,7 +23,6 @@ class MovieFactory extends Factory
             'vote_average' => fake()->randomFloat(1, 0, 10),
             'genres' => ['Action'],
             'release_date' => fake()->date(),
-            'resolved_source' => 'tmdb',
             'synced_at' => now(),
         ];
     }

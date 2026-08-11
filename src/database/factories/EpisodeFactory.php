@@ -22,7 +22,6 @@ class EpisodeFactory extends Factory
             'title' => fake()->sentence(4),
             'air_date' => fake()->date(),
             'tmdb_id' => fake()->unique()->numberBetween(1, 999999),
-            'trakt_id' => null,
         ];
     }
 }

@@ -21,8 +21,10 @@
                 {{ $slot }}
             </main>
 
-            <footer class="py-6 text-center text-xs text-gray-400 dark:text-gray-500">
+            <footer class="py-6 text-center text-xs text-gray-400 dark:text-gray-500 space-x-2">
                 <a href="{{ route('donate') }}" class="hover:underline">Donate</a>
+                <span>&middot;</span>
+                <span>v{{ config('app.version') }}</span>
             </footer>
         </div>
     </body>

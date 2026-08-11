@@ -37,11 +37,10 @@ class MovieSyncServiceTest extends TestCase
             ]),
         ]);
 
-        $movie = $this->service->store('tmdb', '603');
+        $movie = $this->service->store('603');
 
         $this->assertSame('The Matrix', $movie->title);
         $this->assertSame('603', $movie->tmdb_id);
-        $this->assertSame('tmdb', $movie->resolved_source);
     }
 
     public function test_store_is_idempotent_for_the_same_external_id(): void
@@ -55,27 +54,26 @@ class MovieSyncServiceTest extends TestCase
             ]),
         ]);
 
-        $first = $this->service->store('tmdb', '603');
-        $second = $this->service->store('tmdb', '603');
+        $first = $this->service->store('603');
+        $second = $this->service->store('603');
 
         $this->assertSame($first->id, $second->id);
         $this->assertSame(1, Movie::query()->count());
     }
 
-    public function test_store_throws_when_the_provider_has_no_match(): void
+    public function test_store_throws_when_tmdb_has_no_match(): void
     {
         Http::fake(['api.themoviedb.org/3/movie/*' => Http::response(null, 404)]);
 
         $this->expectException(MovieNotFoundException::class);
 
-        $this->service->store('tmdb', 'missing');
+        $this->service->store('missing');
     }
 
-    public function test_refresh_metadata_updates_fields_from_the_originally_resolved_provider(): void
+    public function test_refresh_metadata_updates_fields_from_tmdb(): void
     {
         $movie = Movie::factory()->create([
             'tmdb_id' => '603',
-            'resolved_source' => 'tmdb',
             'overview' => 'stale overview',
             'vote_average' => 1.0,
         ]);
@@ -98,9 +96,9 @@ class MovieSyncServiceTest extends TestCase
         $this->assertNotNull($movie->synced_at);
     }
 
-    public function test_refresh_metadata_does_nothing_without_a_linked_external_id(): void
+    public function test_refresh_metadata_does_nothing_without_a_linked_tmdb_id(): void
     {
-        $movie = Movie::factory()->create(['tmdb_id' => null, 'trakt_id' => null, 'resolved_source' => 'tmdb']);
+        $movie = Movie::factory()->create(['tmdb_id' => null]);
 
         Http::fake();
 
@@ -109,9 +107,9 @@ class MovieSyncServiceTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_refresh_metadata_does_nothing_when_the_provider_fetch_fails(): void
+    public function test_refresh_metadata_does_nothing_when_the_tmdb_fetch_fails(): void
     {
-        $movie = Movie::factory()->create(['tmdb_id' => '603', 'resolved_source' => 'tmdb', 'overview' => 'stale overview', 'synced_at' => null]);
+        $movie = Movie::factory()->create(['tmdb_id' => '603', 'overview' => 'stale overview', 'synced_at' => null]);
 
         Http::fake(['api.themoviedb.org/3/movie/*' => Http::response(null, 404)]);
 

@@ -31,6 +31,15 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
+    public function updateRecommendations(Request $request): RedirectResponse
+    {
+        $request->user()->update([
+            'recommendations_enabled' => $request->boolean('recommendations_enabled'),
+        ]);
+
+        return Redirect::route('profile.edit')->with('status', 'recommendations-updated');
+    }
+
     public function destroy(Request $request): RedirectResponse
     {
         $request->validateWithBag('userDeletion', [

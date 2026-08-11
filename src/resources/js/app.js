@@ -80,6 +80,49 @@ Alpine.data('catalogSearch', (suggestUrl) => ({
     },
 }));
 
+// Backs the Track/Add-to-watchlist button on search result cards. Submits via
+// fetch instead of a normal form POST so picking a result doesn't navigate the
+// user away from their search — they can track several results in a row.
+Alpine.data('trackButton', (storeUrl, type, externalId) => ({
+    status: 'idle', // idle | loading | done | error
+    message: '',
+
+    async track() {
+        if (this.status === 'loading' || this.status === 'done') {
+            return;
+        }
+
+        this.status = 'loading';
+        this.message = '';
+
+        try {
+            const response = await fetch(storeUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ type, external_id: externalId }),
+            });
+
+            const data = await response.json();
+
+            if (! response.ok) {
+                this.status = 'error';
+                this.message = data.message || 'Something went wrong.';
+                return;
+            }
+
+            this.status = 'done';
+            this.message = data.message;
+        } catch (error) {
+            this.status = 'error';
+            this.message = 'Something went wrong.';
+        }
+    },
+}));
+
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');

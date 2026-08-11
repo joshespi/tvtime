@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Episode;
 use App\Models\Show;
 use App\Models\UserShow;
 use App\Services\Catalog\CatalogSearchService;
-use App\Services\Shows\ShowSyncService;
 use App\Support\WatchlistSort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,16 +13,15 @@ use Illuminate\View\View;
 
 class ShowController extends Controller
 {
-    public function __construct(
-        private readonly CatalogSearchService $catalog,
-        private readonly ShowSyncService $shows,
-    ) {}
+    public function __construct(private readonly CatalogSearchService $catalog) {}
 
     public function index(Request $request): View
     {
         $sort = WatchlistSort::resolve($request->string('sort')->toString());
 
-        $tracked = $request->user()->shows()->with('show')->get();
+        $tracked = $request->user()->shows()
+            ->with('show.nextUpcomingEpisode')
+            ->get();
 
         $tracked = WatchlistSort::apply(
             $tracked,
@@ -46,17 +43,10 @@ class ShowController extends Controller
 
         $episodes = $show->episodesWithWatchState($request->user()->id);
 
-        $linkQuery = $request->string('link_query')->trim()->toString();
-
         return view('shows.show', [
             'show' => $show,
             'userShow' => $userShow,
             'seasons' => $episodes->groupBy('season'),
-            'linkQuery' => $linkQuery,
-            'linkResults' => $linkQuery !== '' ? $this->shows->searchSecondarySource($show, $linkQuery) : [],
-            // The provider to cross-check against, named once here rather than
-            // re-derived from 'tmdb'/'trakt' string ternaries in the view.
-            'secondary' => $this->shows->secondarySource($show),
         ]);
     }
 
@@ -67,46 +57,6 @@ class ShowController extends Controller
         $userShow->delete();
 
         return redirect()->route('shows.index')->with('status', 'Show removed from your list.');
-    }
-
-    public function linkSource(Request $request, Show $show): RedirectResponse
-    {
-        $this->trackedOrFail($request, $show->id);
-
-        $validated = $request->validate([
-            'source' => 'required|in:tmdb,trakt',
-            'external_id' => 'required|string',
-        ]);
-
-        $this->shows->linkSecondarySource($show, $validated['source'], $validated['external_id']);
-
-        return redirect()->route('shows.show', $show)->with('status', 'Linked '.ucfirst($validated['source']).'.');
-    }
-
-    public function checkConflicts(Request $request, Show $show): RedirectResponse
-    {
-        $this->trackedOrFail($request, $show->id);
-
-        $conflicts = $this->shows->findAirDateConflicts($show);
-
-        if ($conflicts === []) {
-            return redirect()->route('shows.show', $show)->with('status', 'No air-date conflicts found.');
-        }
-
-        return redirect()->route('shows.show', $show)->with('conflicts', $conflicts);
-    }
-
-    public function resolveConflict(Request $request, Episode $episode): RedirectResponse
-    {
-        $this->trackedOrFail($request, $episode->show_id);
-
-        $validated = $request->validate([
-            'air_date' => 'required|date',
-        ]);
-
-        $episode->update(['air_date' => $validated['air_date']]);
-
-        return redirect()->route('shows.show', $episode->show_id)->with('status', "Updated air date for {$episode->code()}.");
     }
 
     /**

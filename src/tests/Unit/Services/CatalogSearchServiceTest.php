@@ -20,7 +20,7 @@ class CatalogSearchServiceTest extends TestCase
         $this->service = app(CatalogSearchService::class);
     }
 
-    public function test_search_uses_tmdb_results_when_available(): void
+    public function test_search_returns_tmdb_results(): void
     {
         Http::fake([
             'api.themoviedb.org/3/search/multi*' => Http::response([
@@ -28,33 +28,19 @@ class CatalogSearchServiceTest extends TestCase
                     ['media_type' => 'tv', 'id' => 1, 'name' => 'A Show', 'first_air_date' => '2020-01-01', 'poster_path' => '/a.jpg', 'overview' => 'o', 'vote_average' => 7.0],
                 ],
             ]),
-            'api.trakt.tv/*' => Http::response([]),
         ]);
 
         $result = $this->service->search('query');
 
-        $this->assertSame('tmdb', $result['source']);
-        $this->assertCount(1, $result['results']);
-        $this->assertSame('https://image.tmdb.org/t/p/w185/a.jpg', $result['results'][0]['poster_url']);
+        $this->assertCount(1, $result);
+        $this->assertSame('https://image.tmdb.org/t/p/w185/a.jpg', $result[0]['poster_url']);
     }
 
-    public function test_search_falls_back_to_trakt_when_tmdb_has_no_results(): void
+    public function test_search_returns_empty_when_tmdb_has_no_results(): void
     {
-        Http::fake([
-            'api.themoviedb.org/3/search/multi*' => Http::response(['results' => []]),
-            'api.trakt.tv/search/movie,show*' => Http::response([
-                [
-                    'type' => 'show',
-                    'show' => ['ids' => ['slug' => 'a-show'], 'title' => 'A Show', 'year' => 2020, 'overview' => 'o', 'rating' => 7.0, 'genres' => []],
-                ],
-            ]),
-        ]);
+        Http::fake(['api.themoviedb.org/3/search/multi*' => Http::response(['results' => []])]);
 
-        $result = $this->service->search('query');
-
-        $this->assertSame('trakt', $result['source']);
-        $this->assertCount(1, $result['results']);
-        $this->assertNull($result['results'][0]['poster_url']);
+        $this->assertSame([], $this->service->search('query'));
     }
 
     public function test_for_request_skips_the_provider_call_for_a_blank_query(): void
@@ -63,7 +49,7 @@ class CatalogSearchServiceTest extends TestCase
 
         $result = $this->service->forRequest(Request::create('/shows', 'GET', ['q' => '   ']));
 
-        $this->assertSame(['query' => '', 'source' => null, 'results' => []], $result);
+        $this->assertSame(['query' => '', 'results' => []], $result);
         Http::assertNothingSent();
     }
 
@@ -75,7 +61,6 @@ class CatalogSearchServiceTest extends TestCase
                     ['media_type' => 'tv', 'id' => 1, 'name' => 'A Show', 'first_air_date' => '2020-01-01', 'poster_path' => '/a.jpg', 'overview' => 'o', 'vote_average' => 7.0],
                 ],
             ]),
-            'api.trakt.tv/*' => Http::response([]),
         ]);
 
         $first = $this->service->search('breaking bad');
@@ -87,10 +72,7 @@ class CatalogSearchServiceTest extends TestCase
 
     public function test_for_request_trims_and_reads_the_query_parameter(): void
     {
-        Http::fake([
-            'api.themoviedb.org/3/search/multi*' => Http::response(['results' => []]),
-            'api.trakt.tv/*' => Http::response([]),
-        ]);
+        Http::fake(['api.themoviedb.org/3/search/multi*' => Http::response(['results' => []])]);
 
         $request = Request::create('/shows', 'GET', ['q' => '  query  ']);
 

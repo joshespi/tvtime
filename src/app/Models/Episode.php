@@ -61,6 +61,12 @@ class Episode extends Model
             });
     }
 
+    /** Episodes that haven't aired yet — for "next episode" countdowns. */
+    public function scopeUpcoming(Builder $query): Builder
+    {
+        return $query->where('air_date', '>', today()->endOfDay());
+    }
+
     /**
      * Marks this episode and every earlier one in the same show (spanning
      * prior seasons) as watched — for clearing a gap of earlier unwatched episodes.

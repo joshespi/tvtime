@@ -4,25 +4,14 @@ namespace App\Services\Movies;
 
 use App\Models\Movie;
 use App\Services\Shows\TmdbClient;
-use App\Services\Shows\TraktClient;
-use App\Support\Provider;
 
-/**
- * Movie counterpart to ShowSyncService — same TMDB-primary/Trakt-fallback
- * resolution, but there's no episodes() step since a movie has no sub-items.
- */
 class MovieSyncService
 {
-    public function __construct(
-        private readonly TmdbClient $tmdb,
-        private readonly TraktClient $trakt,
-    ) {}
+    public function __construct(private readonly TmdbClient $tmdb) {}
 
-    public function store(string $source, string $externalId): Movie
+    public function store(string $externalId): Movie
     {
-        $provider = Provider::from($source);
-        $client = $provider->client($this->tmdb, $this->trakt);
-        $movie = $client->movie($externalId);
+        $movie = $this->tmdb->movie($externalId);
 
         if (! $movie) {
             throw MovieNotFoundException::forQuery($externalId);
@@ -36,28 +25,20 @@ class MovieSyncService
             'vote_average' => $movie['vote_average'] ?? null,
             'genres' => $movie['genres'] ?? [],
             'release_date' => $movie['release_date'] ?? null,
-            'resolved_source' => $source,
             'synced_at' => now(),
         ];
 
-        return Movie::updateOrCreate([$provider->idColumn() => $externalId], $attributes);
+        return Movie::updateOrCreate(['tmdb_id' => $externalId], $attributes);
     }
 
-    /**
-     * Re-fetch metadata for a movie already in the catalog, using whichever
-     * provider originally resolved it.
-     */
+    /** Re-fetch metadata for a movie already in the catalog. */
     public function refreshMetadata(Movie $movie): void
     {
-        $provider = Provider::forRecord($movie);
-        $client = $provider->client($this->tmdb, $this->trakt);
-        $externalId = $provider->externalIdOf($movie);
-
-        if (! $externalId) {
+        if (! $movie->tmdb_id) {
             return;
         }
 
-        $details = $client->movie($externalId);
+        $details = $this->tmdb->movie((string) $movie->tmdb_id);
 
         if (! $details) {
             return;

@@ -2,7 +2,7 @@
 
 Self-hostable replacement for TV Time. Track what you're watching, get notified when a new episode airs.
 
-- Track shows and movies, sourced from TMDB (primary) with Trakt as a fallback
+- Track shows and movies, sourced from TMDB
 - "Up Next" dashboard, a calendar view of upcoming air dates/releases, and a combined watch history
 - Mark episodes/movies watched individually, or a whole run of episodes at once
 - Email + web push notifications when a tracked show airs a new episode
@@ -12,7 +12,7 @@ Self-hostable replacement for TV Time. Track what you're watching, get notified 
 
 ```bash
 cp .env.example .env
-# fill in TMDB_API_KEY, TRAKT_CLIENT_ID (both free — see .env.example for links)
+# fill in TMDB_API_KEY (free — see .env.example for the link)
 
 docker compose build
 docker compose up -d

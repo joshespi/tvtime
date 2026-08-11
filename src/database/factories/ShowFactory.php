@@ -16,7 +16,6 @@ class ShowFactory extends Factory
     {
         return [
             'tmdb_id' => fake()->unique()->numberBetween(1, 999999),
-            'trakt_id' => null,
             'title' => fake()->unique()->sentence(3),
             'poster_path' => '/poster.jpg',
             'overview' => fake()->paragraph(),
@@ -24,17 +23,7 @@ class ShowFactory extends Factory
             'vote_average' => fake()->randomFloat(1, 0, 10),
             'genres' => ['Drama'],
             'first_air_date' => fake()->date(),
-            'resolved_source' => 'tmdb',
             'synced_at' => now(),
         ];
-    }
-
-    public function fromTrakt(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'tmdb_id' => null,
-            'trakt_id' => fake()->unique()->slug(),
-            'resolved_source' => 'trakt',
-        ]);
     }
 }

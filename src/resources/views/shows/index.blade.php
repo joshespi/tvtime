@@ -8,7 +8,7 @@
 
             <x-status-banner />
 
-            <x-catalog-search :query="$query" :source="$source" :results="$results"
+            <x-catalog-search :query="$query" :results="$results"
                 :action="route('shows.index')" :suggest-url="route('search.suggest')" />
 
             <div class="flex items-center justify-between gap-2 px-1">
@@ -36,6 +36,12 @@
                                     </p>
                                     @if (! empty($userShow->show->genres))
                                         <p class="text-xs text-gray-400 dark:text-gray-500 capitalize">{{ implode(', ', $userShow->show->genres) }}</p>
+                                    @endif
+                                    @if ($userShow->show->nextUpcomingEpisode)
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+                                            <span>Next: {{ $userShow->show->nextUpcomingEpisode->code() }}</span>
+                                            <x-countdown :date="$userShow->show->nextUpcomingEpisode->air_date" />
+                                        </p>
                                     @endif
                                 </div>
                                 <form method="POST" action="{{ route('shows.destroy', $userShow) }}" onsubmit="return confirm('Stop tracking this show?')">

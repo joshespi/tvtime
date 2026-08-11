@@ -8,7 +8,7 @@
 
             <x-status-banner />
 
-            <x-catalog-search :query="$query" :source="$source" :results="$results"
+            <x-catalog-search :query="$query" :results="$results"
                 :action="route('movies.index')" :suggest-url="route('search.suggest')" />
 
             <div class="flex items-center justify-between gap-2 px-1">
@@ -24,16 +24,19 @@
                             <div class="min-w-0 flex-1 flex flex-col gap-2">
                                 <div class="min-w-0">
                                     <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ $userMovie->movie->title }}</p>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
-                                        @if ($userMovie->movie->release_date)
-                                            {{ $userMovie->movie->release_date->format('Y') }}
-                                        @endif
-                                        @if ($userMovie->movie->status)
-                                            · {{ $userMovie->movie->status }}
-                                        @endif
-                                        @if ($userMovie->movie->vote_average)
-                                            · &#9733; {{ number_format($userMovie->movie->vote_average, 1) }}
-                                        @endif
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide flex items-center gap-2 flex-wrap">
+                                        <span>
+                                            @if ($userMovie->movie->release_date)
+                                                {{ $userMovie->movie->release_date->format('Y') }}
+                                            @endif
+                                            @if ($userMovie->movie->status)
+                                                · {{ $userMovie->movie->status }}
+                                            @endif
+                                            @if ($userMovie->movie->vote_average)
+                                                · &#9733; {{ number_format($userMovie->movie->vote_average, 1) }}
+                                            @endif
+                                        </span>
+                                        <x-countdown :date="$userMovie->movie->release_date" />
                                     </p>
                                     @if (! empty($userMovie->movie->genres))
                                         <p class="text-xs text-gray-400 dark:text-gray-500 capitalize">{{ implode(', ', $userMovie->movie->genres) }}</p>
