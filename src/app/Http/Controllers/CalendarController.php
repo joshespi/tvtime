@@ -12,7 +12,9 @@ class CalendarController extends Controller
 {
     /**
      * Month-grid of episode air dates and movie release dates across everything
-     * tracked, regardless of watch status — "what's coming up" doesn't care what's already watched.
+     * tracked, regardless of whether it's been watched — "what's coming up"
+     * doesn't care what's already watched. Shows the user has paused or dropped
+     * are left out entirely, though: they've said they aren't following those.
      */
     public function __invoke(Request $request): View
     {
@@ -28,7 +30,7 @@ class CalendarController extends Controller
 
         $episodesByDate = Episode::query()
             ->whereBetween('air_date', [$start->toDateString(), $end->toDateString()])
-            ->whereHas('show.userShows', fn ($query) => $query->where('user_id', $userId))
+            ->whereHas('show.userShows', fn ($query) => $query->where('user_id', $userId)->active())
             ->with('show')
             ->get()
             ->groupBy(fn (Episode $episode) => $episode->air_date->toDateString());

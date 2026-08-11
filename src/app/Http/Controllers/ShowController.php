@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Show;
 use App\Models\UserShow;
 use App\Services\Catalog\CatalogSearchService;
+use App\Support\TrackingStatus;
 use App\Support\WatchlistSort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ShowController extends Controller
@@ -30,8 +32,20 @@ class ShowController extends Controller
             fn (UserShow $userShow) => $userShow->show->title,
         );
 
+        // Paused/dropped shows sink below the active ones while keeping the
+        // chosen sort within each group — PHP's sort is stable, so this is a
+        // partition rather than a re-sort.
+        $tracked = $tracked->sortBy(fn (UserShow $userShow) => $userShow->status->isActive() ? 0 : 1);
+
+        // Caught-up shows get their own shelf rather than padding the list of
+        // things there's actually something to watch on.
+        [$finished, $tracked] = $tracked->partition(
+            fn (UserShow $userShow) => $userShow->status === TrackingStatus::Finished
+        );
+
         return view('shows.index', [
-            'tracked' => $tracked,
+            'tracked' => $tracked->values(),
+            'finished' => $finished->values(),
             'sort' => $sort,
             ...$this->catalog->forRequest($request),
         ]);
@@ -50,6 +64,25 @@ class ShowController extends Controller
         ]);
     }
 
+    /**
+     * Change how closely a show is followed without losing it — the "stop
+     * watching but keep it" path, as opposed to destroy() which forgets it.
+     */
+    public function updateStatus(Request $request, UserShow $userShow): RedirectResponse
+    {
+        Gate::authorize('update', $userShow);
+
+        $request->validate([
+            'status' => ['required', Rule::enum(TrackingStatus::class)],
+        ]);
+
+        $status = $request->enum('status', TrackingStatus::class);
+
+        $userShow->update(['status' => $status]);
+
+        return back()->with('status', "\"{$userShow->show->title}\" is now marked {$status->label()}.");
+    }
+
     public function destroy(UserShow $userShow): RedirectResponse
     {
         Gate::authorize('delete', $userShow);
@@ -63,9 +96,11 @@ class ShowController extends Controller
      * The current user's tracking record for a show, 404ing if they don't track
      * it. Every action on this controller is scoped that way, so the rule lives
      * in one place rather than being restated per action.
+     *
+     * with('show') because the status picker labels itself from the show title.
      */
     private function trackedOrFail(Request $request, int $showId): UserShow
     {
-        return $request->user()->shows()->where('show_id', $showId)->firstOrFail();
+        return $request->user()->shows()->with('show')->where('show_id', $showId)->firstOrFail();
     }
 }

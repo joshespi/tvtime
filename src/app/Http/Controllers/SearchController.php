@@ -9,6 +9,8 @@ use App\Services\Movies\MovieNotFoundException;
 use App\Services\Movies\MovieSyncService;
 use App\Services\Shows\ShowNotFoundException;
 use App\Services\Shows\ShowSyncService;
+use App\Support\TrackingStatus;
+use App\Support\WatchCount;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -70,7 +72,7 @@ class SearchController extends Controller
             'user_id' => $request->user()->id,
             'show_id' => $show->id,
         ], [
-            'status' => 'watching',
+            'status' => TrackingStatus::Watching,
         ]);
 
         return $this->respondSuccess($request, "Now tracking \"{$show->title}\".", 'shows.index');
@@ -84,10 +86,24 @@ class SearchController extends Controller
             return $this->respondError($request, 'Could not find that movie on TMDB.');
         }
 
-        UserMovie::firstOrCreate([
+        $userMovie = UserMovie::firstOrCreate([
             'user_id' => $request->user()->id,
             'movie_id' => $movie->id,
         ]);
+
+        // Adding a movie that was already watched is a rewatch, not a no-op:
+        // without this the button would report success while the movie stayed
+        // on the Finished shelf and never reappeared on the watchlist.
+        if ($userMovie->watched_at) {
+            $watches = $userMovie->watches()->count();
+            $userMovie->requeue();
+
+            return $this->respondSuccess(
+                $request,
+                "\"{$movie->title}\" is back on your watchlist — you've watched it ".WatchCount::phrase($watches).' before.',
+                'movies.index',
+            );
+        }
 
         return $this->respondSuccess($request, "Added \"{$movie->title}\" to your watchlist.", 'movies.index');
     }

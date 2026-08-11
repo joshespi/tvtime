@@ -25,10 +25,9 @@ class HistoryControllerTest extends TestCase
         $user = User::factory()->create();
 
         $movie = Movie::factory()->create(['title' => 'Old Movie']);
-        UserMovie::factory()->create([
+        UserMovie::factory()->watched(now()->subDays(2))->create([
             'user_id' => $user->id,
             'movie_id' => $movie->id,
-            'watched_at' => now()->subDays(2),
         ]);
 
         $show = Show::factory()->create(['title' => 'Recent Show']);

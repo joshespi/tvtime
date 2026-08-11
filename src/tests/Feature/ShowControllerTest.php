@@ -6,6 +6,7 @@ use App\Models\Episode;
 use App\Models\Show;
 use App\Models\User;
 use App\Models\UserShow;
+use App\Support\TrackingStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -69,6 +70,75 @@ class ShowControllerTest extends TestCase
         $show = Show::factory()->create();
 
         $this->actingAs($user)->get("/shows/{$show->id}")->assertNotFound();
+    }
+
+    public function test_index_lists_finished_shows_on_their_own_shelf(): void
+    {
+        $user = User::factory()->create();
+        $caughtUp = Show::factory()->create(['title' => 'Caught Up']);
+        $current = Show::factory()->create(['title' => 'Still Going']);
+
+        UserShow::factory()->finished()->create(['user_id' => $user->id, 'show_id' => $caughtUp->id]);
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $current->id]);
+
+        $response = $this->actingAs($user)->get('/shows');
+
+        $response->assertOk();
+        $response->assertSee('Caught Up');
+        $this->assertSame(['Still Going'], $response->viewData('tracked')->pluck('show.title')->all());
+        $this->assertSame(['Caught Up'], $response->viewData('finished')->pluck('show.title')->all());
+    }
+
+    public function test_index_sinks_paused_and_dropped_shows_below_active_ones(): void
+    {
+        $user = User::factory()->create();
+        $apple = Show::factory()->create(['title' => 'Apple']);
+        $zebra = Show::factory()->create(['title' => 'Zebra']);
+
+        UserShow::factory()->paused()->create(['user_id' => $user->id, 'show_id' => $apple->id]);
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $zebra->id]);
+
+        $response = $this->actingAs($user)->get('/shows?sort=title');
+
+        $response->assertOk();
+        $this->assertSame(['Zebra', 'Apple'], $response->viewData('tracked')->pluck('show.title')->all());
+    }
+
+    public function test_update_status_stops_watching_without_removing_the_show(): void
+    {
+        $user = User::factory()->create();
+        $userShow = UserShow::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)
+            ->from(route('shows.index'))
+            ->patch("/shows/{$userShow->id}/status", ['status' => 'dropped']);
+
+        $response->assertRedirect(route('shows.index'));
+        $this->assertSame(TrackingStatus::Dropped, $userShow->fresh()->status);
+    }
+
+    public function test_update_status_rejects_an_unknown_status(): void
+    {
+        $user = User::factory()->create();
+        $userShow = UserShow::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->patch("/shows/{$userShow->id}/status", ['status' => 'abandoned'])
+            ->assertSessionHasErrors('status');
+
+        $this->assertSame(TrackingStatus::Watching, $userShow->fresh()->status);
+    }
+
+    public function test_update_status_forbids_changing_another_users_show(): void
+    {
+        $user = User::factory()->create();
+        $userShow = UserShow::factory()->create();
+
+        $this->actingAs($user)
+            ->patch("/shows/{$userShow->id}/status", ['status' => 'dropped'])
+            ->assertForbidden();
+
+        $this->assertSame(TrackingStatus::Watching, $userShow->fresh()->status);
     }
 
     public function test_destroy_removes_the_users_tracked_show(): void

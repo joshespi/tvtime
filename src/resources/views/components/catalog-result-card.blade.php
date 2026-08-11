@@ -25,6 +25,21 @@
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ $result['overview'] }}</p>
             @endif
         </div>
+        @if ($tracked = $result['tracked'] ?? null)
+            {{-- Already in the user's lists: say so instead of offering to add it
+                 again, which previously read as if it had never been watched. --}}
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-emerald-700 dark:text-emerald-400">&#10003; {{ $tracked['label'] }}</span>
+                @if (! empty($tracked['watch_again_url']))
+                    <form method="POST" action="{{ $tracked['watch_again_url'] }}">
+                        @csrf
+                        <x-action-button>Watch again</x-action-button>
+                    </form>
+                @elseif (! empty($tracked['url']))
+                    <a href="{{ $tracked['url'] }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">View</a>
+                @endif
+            </div>
+        @else
         <div>
             <form method="POST" action="{{ route('search.store') }}" @submit.prevent="track()">
                 @csrf
@@ -40,5 +55,6 @@
             </form>
             <p x-show="status === 'error'" x-text="message" class="text-xs text-red-600 dark:text-red-400 mt-1"></p>
         </div>
+        @endif
     </div>
 </div>

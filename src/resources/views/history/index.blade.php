@@ -30,10 +30,17 @@
                                         Watched {{ $entry['watched_at']->format('M j, Y') }}
                                     </p>
                                 </div>
-                                <form method="POST" action="{{ $entry['toggle_url'] }}">
-                                    @csrf
-                                    <x-action-button>Mark unwatched</x-action-button>
-                                </form>
+                                <div class="flex items-center gap-2">
+                                    @foreach ($entry['actions'] as $action)
+                                        <form method="POST" action="{{ $action['url'] }}">
+                                            @csrf
+                                            @isset($action['method'])
+                                                @method($action['method'])
+                                            @endisset
+                                            <x-action-button :variant="$action['variant'] ?? 'secondary'">{{ $action['label'] }}</x-action-button>
+                                        </form>
+                                    @endforeach
+                                </div>
                             </div>
                         </div>
                     @endforeach

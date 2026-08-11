@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Episode;
 use App\Models\Show;
 use App\Models\User;
+use App\Models\UserShow;
 use App\Models\WatchStatus;
+use App\Support\TrackingStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -67,5 +69,43 @@ class WatchStatusControllerTest extends TestCase
         $response->assertRedirect();
         $this->assertDatabaseHas('watch_status', ['user_id' => $user->id, 'episode_id' => $e1->id]);
         $this->assertDatabaseHas('watch_status', ['user_id' => $user->id, 'episode_id' => $e2->id]);
+    }
+
+    public function test_watching_the_last_aired_episode_finishes_the_show(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create();
+        $userShow = UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $episode = Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()->subWeek()]);
+
+        $this->actingAs($user)->post("/episodes/{$episode->id}/toggle-watched");
+
+        $this->assertSame(TrackingStatus::Finished, $userShow->fresh()->status);
+    }
+
+    public function test_unwatching_an_episode_puts_a_finished_show_back_to_watching(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create();
+        $userShow = UserShow::factory()->finished()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $episode = Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()->subWeek()]);
+        WatchStatus::factory()->watched()->create(['user_id' => $user->id, 'episode_id' => $episode->id]);
+
+        $this->actingAs($user)->post("/episodes/{$episode->id}/toggle-watched");
+
+        $this->assertSame(TrackingStatus::Watching, $userShow->fresh()->status);
+    }
+
+    public function test_mark_through_finishes_a_show_caught_up_in_one_go(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create();
+        $userShow = UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->subMonth()]);
+        $last = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 2, 'air_date' => today()->subWeek()]);
+
+        $this->actingAs($user)->post("/episodes/{$last->id}/mark-through");
+
+        $this->assertSame(TrackingStatus::Finished, $userShow->fresh()->status);
     }
 }

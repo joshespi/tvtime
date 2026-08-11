@@ -31,7 +31,7 @@ class UpNextController extends Controller
         // narrowed to the single next unwatched-aired one, and the next upcoming
         // one comes from its own relation so the two can't overwrite each other.
         $watchingShows = $request->user()->shows()
-            ->where('status', 'watching')
+            ->active()
             ->with([
                 'show.episodes' => fn ($query) => $query
                     ->unwatchedAiredFor($userId)
@@ -49,8 +49,9 @@ class UpNextController extends Controller
             ->values();
 
         $movieWatchlist = $request->user()->movies()
-            ->whereNull('watched_at')
+            ->inWatchlist()
             ->with('movie')
+            ->withCount('watches')
             ->get()
             ->sortByDesc('created_at')
             ->values();

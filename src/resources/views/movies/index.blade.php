@@ -16,52 +16,53 @@
                 <x-sort-select :sort="$sort" :query="$query" />
             </div>
 
+            @if ($finished->isNotEmpty())
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Watchlist</h3>
+            @endif
+
             @if ($watchlist->isNotEmpty())
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     @foreach ($watchlist as $userMovie)
-                        <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4">
-                            <x-show-poster :url="$userMovie->movie->posterUrl()" :alt="$userMovie->movie->title" />
-                            <div class="min-w-0 flex-1 flex flex-col gap-2">
-                                <div class="min-w-0">
-                                    <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ $userMovie->movie->title }}</p>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                                        <span>
-                                            @if ($userMovie->movie->release_date)
-                                                {{ $userMovie->movie->release_date->format('Y') }}
-                                            @endif
-                                            @if ($userMovie->movie->status)
-                                                · {{ $userMovie->movie->status }}
-                                            @endif
-                                            @if ($userMovie->movie->vote_average)
-                                                · &#9733; {{ number_format($userMovie->movie->vote_average, 1) }}
-                                            @endif
-                                        </span>
-                                        <x-countdown :date="$userMovie->movie->release_date" />
-                                    </p>
-                                    @if (! empty($userMovie->movie->genres))
-                                        <p class="text-xs text-gray-400 dark:text-gray-500 capitalize">{{ implode(', ', $userMovie->movie->genres) }}</p>
-                                    @endif
-                                    @if ($userMovie->movie->overview)
-                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ $userMovie->movie->overview }}</p>
-                                    @endif
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <form method="POST" action="{{ route('movies.toggle-watched', $userMovie) }}">
-                                        @csrf
-                                        <x-action-button variant="primary">Mark watched</x-action-button>
-                                    </form>
-                                    <form method="POST" action="{{ route('movies.destroy', $userMovie) }}" onsubmit="return confirm('Remove this movie from your list?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <x-action-button>Remove</x-action-button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
+                        <x-movie-card :user-movie="$userMovie">
+                            <form method="POST" action="{{ route('movies.toggle-watched', $userMovie) }}">
+                                @csrf
+                                <x-action-button variant="primary">{{ $userMovie->watches_count ? 'Mark watched again' : 'Mark watched' }}</x-action-button>
+                            </form>
+                            <form method="POST" action="{{ route('movies.destroy', $userMovie) }}" onsubmit="return confirm('Remove this movie from your list?')">
+                                @csrf
+                                @method('DELETE')
+                                <x-action-button>Remove</x-action-button>
+                            </form>
+                        </x-movie-card>
                     @endforeach
                 </div>
             @else
                 <x-empty-state>Your watchlist is empty.</x-empty-state>
+            @endif
+
+            @if ($finished->isNotEmpty())
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide pt-6 px-1">
+                    Finished <span class="font-normal normal-case">({{ $finished->count() }})</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    @foreach ($finished as $userMovie)
+                        <x-movie-card :user-movie="$userMovie">
+                            <form method="POST" action="{{ route('movies.watch-again', $userMovie) }}">
+                                @csrf
+                                <x-action-button variant="primary">Watch again</x-action-button>
+                            </form>
+                            <form method="POST" action="{{ route('movies.toggle-watched', $userMovie) }}">
+                                @csrf
+                                <x-action-button>Mark unwatched</x-action-button>
+                            </form>
+                            <form method="POST" action="{{ route('movies.destroy', $userMovie) }}" onsubmit="return confirm('Remove this movie and its watch history?')">
+                                @csrf
+                                @method('DELETE')
+                                <x-action-button>Remove</x-action-button>
+                            </form>
+                        </x-movie-card>
+                    @endforeach
+                </div>
             @endif
 
         </div>

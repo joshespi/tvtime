@@ -50,15 +50,26 @@ class Episode extends Model
         ]);
     }
 
+    /** Episodes that have already aired — the inverse of scopeUpcoming(). */
+    public function scopeAired(Builder $query): Builder
+    {
+        return $query->where('air_date', '<=', today()->endOfDay());
+    }
+
+    /** Episodes this user hasn't marked watched yet, aired or not. */
+    public function scopeUnwatchedBy(Builder $query, int $userId): Builder
+    {
+        return $query->whereDoesntHave('watchStatuses', function (Builder $query) use ($userId) {
+            $query->where('user_id', $userId)->whereNotNull('watched_at');
+        });
+    }
+
     /**
      * Episodes that have aired but this user hasn't marked watched yet.
      */
     public function scopeUnwatchedAiredFor(Builder $query, int $userId): Builder
     {
-        return $query->where('air_date', '<=', today()->endOfDay())
-            ->whereDoesntHave('watchStatuses', function (Builder $query) use ($userId) {
-                $query->where('user_id', $userId)->whereNotNull('watched_at');
-            });
+        return $query->aired()->unwatchedBy($userId);
     }
 
     /** Episodes that haven't aired yet — for "next episode" countdowns. */

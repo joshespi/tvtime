@@ -41,7 +41,7 @@ class CheckMovieReleases extends Command
         // movie inside the loop below.
         $watchlistedByMovie = UserMovie::query()
             ->whereIn('movie_id', $releasingToday->pluck('id'))
-            ->whereNull('watched_at')
+            ->inWatchlist()
             ->with('user')
             ->get()
             ->groupBy('movie_id');

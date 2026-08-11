@@ -19,6 +19,8 @@ class WatchStatusController extends Controller
         $status->watched_at = $status->exists && $status->watched_at ? null : now();
         $status->save();
 
+        $this->refreshFinishedStatus($request, $episode);
+
         return back();
     }
 
@@ -30,6 +32,21 @@ class WatchStatusController extends Controller
     {
         $episode->markWatchedThrough($request->user()->id);
 
+        $this->refreshFinishedStatus($request, $episode);
+
         return back();
+    }
+
+    /**
+     * Catching up on the last aired episode is what moves a show onto the
+     * Finished shelf (and un-marking one takes it back off), so every write to
+     * a watch status re-evaluates it.
+     */
+    private function refreshFinishedStatus(Request $request, Episode $episode): void
+    {
+        $request->user()->shows()
+            ->where('show_id', $episode->show_id)
+            ->first()
+            ?->refreshFinishedStatus();
     }
 }

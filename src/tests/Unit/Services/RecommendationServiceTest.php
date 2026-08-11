@@ -48,6 +48,18 @@ class RecommendationServiceTest extends TestCase
         $this->assertSame('show', $results[0]['type']);
     }
 
+    public function test_dropped_shows_neither_seed_nor_appear_in_recommendations(): void
+    {
+        $user = User::factory()->create();
+        $dropped = Show::factory()->create(['tmdb_id' => '1396']);
+        UserShow::factory()->dropped()->create(['user_id' => $user->id, 'show_id' => $dropped->id]);
+
+        Http::fake(['api.themoviedb.org/*' => Http::response(['results' => []])]);
+
+        $this->assertSame([], $this->service->forUser($user));
+        Http::assertNothingSent();
+    }
+
     public function test_excludes_shows_the_user_already_tracks(): void
     {
         $user = User::factory()->create();

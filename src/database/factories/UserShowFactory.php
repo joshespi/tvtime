@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Show;
 use App\Models\User;
 use App\Models\UserShow;
+use App\Support\TrackingStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,7 +20,22 @@ class UserShowFactory extends Factory
         return [
             'user_id' => User::factory(),
             'show_id' => Show::factory(),
-            'status' => 'watching',
+            'status' => TrackingStatus::Watching,
         ];
+    }
+
+    public function finished(): static
+    {
+        return $this->state(['status' => TrackingStatus::Finished]);
+    }
+
+    public function paused(): static
+    {
+        return $this->state(['status' => TrackingStatus::Paused]);
+    }
+
+    public function dropped(): static
+    {
+        return $this->state(['status' => TrackingStatus::Dropped]);
     }
 }

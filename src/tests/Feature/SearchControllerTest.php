@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Movie;
 use App\Models\Show;
 use App\Models\User;
+use App\Models\UserMovie;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -218,5 +219,69 @@ class SearchControllerTest extends TestCase
         $response->assertOk();
         $response->assertJson(['message' => 'Added "The Matrix" to your watchlist.']);
         $this->assertDatabaseCount('user_movies', 1);
+    }
+
+    public function test_store_requeues_a_movie_that_was_already_watched(): void
+    {
+        $user = User::factory()->create();
+        $movie = Movie::factory()->create(['tmdb_id' => '603', 'title' => 'The Matrix']);
+        $userMovie = UserMovie::factory()->watched()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
+
+        Http::fake([
+            'api.themoviedb.org/3/movie/603*' => Http::response([
+                'id' => 603,
+                'title' => 'The Matrix',
+                'overview' => 'A hacker...',
+                'release_date' => '1999-03-31',
+            ]),
+        ]);
+
+        $response = $this->actingAs($user)->post('/search', ['type' => 'movie', 'external_id' => '603']);
+
+        $response->assertRedirect(route('movies.index'));
+        $response->assertSessionHas('status', '"The Matrix" is back on your watchlist — you\'ve watched it once before.');
+        $this->assertNull($userMovie->fresh()->watched_at);
+        $this->assertDatabaseCount('movie_watches', 1);
+    }
+
+    public function test_search_results_say_what_the_user_already_tracks(): void
+    {
+        $user = User::factory()->create();
+        $movie = Movie::factory()->create(['tmdb_id' => '603']);
+        UserMovie::factory()->watched()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
+
+        Http::fake([
+            'api.themoviedb.org/3/search/multi*' => Http::response([
+                'results' => [
+                    ['media_type' => 'movie', 'id' => 603, 'title' => 'The Matrix', 'release_date' => '1999-03-31', 'poster_path' => '/m.jpg', 'overview' => 'o', 'vote_average' => 8.0],
+                ],
+            ]),
+        ]);
+
+        $response = $this->actingAs($user)->get('/movies?q=matrix');
+
+        $response->assertOk();
+        $tracked = $response->viewData('results')[0]['tracked'];
+        $this->assertStringContainsString('Watched once', $tracked['label']);
+        $this->assertSame(route('movies.watch-again', $user->movies()->first()), $tracked['watch_again_url']);
+    }
+
+    public function test_search_results_for_untracked_titles_are_not_annotated(): void
+    {
+        $user = User::factory()->create();
+
+        Http::fake([
+            'api.themoviedb.org/3/search/multi*' => Http::response([
+                'results' => [
+                    ['media_type' => 'movie', 'id' => 603, 'title' => 'The Matrix', 'release_date' => '1999-03-31', 'poster_path' => '/m.jpg', 'overview' => 'o', 'vote_average' => 8.0],
+                ],
+            ]),
+        ]);
+
+        $response = $this->actingAs($user)->get('/movies?q=matrix');
+
+        $response->assertOk();
+        $this->assertNull($response->viewData('results')[0]['tracked']);
+        $response->assertSee('Add to watchlist');
     }
 }

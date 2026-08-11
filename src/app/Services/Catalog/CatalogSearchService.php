@@ -2,8 +2,14 @@
 
 namespace App\Services\Catalog;
 
+use App\Models\User;
+use App\Models\UserMovie;
+use App\Models\UserShow;
 use App\Services\Shows\TmdbClient;
+use App\Support\WatchCount;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /** Backs the combined "add a show or movie" search box, via TMDB's multi-search. */
@@ -39,7 +45,90 @@ class CatalogSearchService
 
         return [
             'query' => $query,
-            'results' => $query !== '' ? $this->search($query) : [],
+            'results' => $query !== '' ? $this->annotate($this->search($query), $request->user()) : [],
+        ];
+    }
+
+    /**
+     * Tags each result with what the user already has, so a movie they finished
+     * years ago doesn't come back looking brand new. Applied after the cache on
+     * purpose — the TMDB results are shared between users, this part isn't.
+     *
+     * @param  array<int, array>  $results
+     * @return array<int, array>
+     */
+    private function annotate(array $results, ?User $user): array
+    {
+        if ($results === [] || ! $user) {
+            return $results;
+        }
+
+        $ids = collect($results)->groupBy('type')->map(fn (Collection $group) => $group->pluck('id')->all());
+
+        $movies = $this->trackedByTmdbId($user->movies()->withCount('watches'), 'movie', $ids->get('movie', []));
+        $shows = $this->trackedByTmdbId($user->shows(), 'show', $ids->get('show', []));
+
+        return array_map(function (array $result) use ($movies, $shows) {
+            $result['tracked'] = $result['type'] === 'movie'
+                ? $this->movieState($movies->get((string) $result['id']))
+                : $this->showState($shows->get((string) $result['id']));
+
+            return $result;
+        }, $results);
+    }
+
+    /**
+     * The user's rows for the given TMDB ids, keyed by TMDB id. Only the id
+     * columns are selected — nothing here renders the stored metadata.
+     *
+     * @param  HasMany<UserMovie|UserShow, User>  $relation
+     * @param  array<int, string>  $tmdbIds
+     * @return Collection<string, UserMovie|UserShow>
+     */
+    private function trackedByTmdbId(HasMany $relation, string $name, array $tmdbIds): Collection
+    {
+        if ($tmdbIds === []) {
+            return collect();
+        }
+
+        return $relation
+            ->whereHas($name, fn ($query) => $query->whereIn('tmdb_id', $tmdbIds))
+            ->with("{$name}:id,tmdb_id")
+            ->get()
+            ->keyBy(fn ($row) => (string) $row->{$name}->tmdb_id);
+    }
+
+    /** @return array{label: string, watch_again_url?: string}|null */
+    private function movieState(?UserMovie $userMovie): ?array
+    {
+        if (! $userMovie) {
+            return null;
+        }
+
+        // Same sentence the movie cards render, so a title can't describe itself
+        // one way in search results and another on the watchlist.
+        $seen = WatchCount::seen($userMovie->watches_count, $userMovie->watched_at);
+
+        if (! $userMovie->isFinished()) {
+            return ['label' => 'On your watchlist'.($seen ? " · {$seen}" : '')];
+        }
+
+        return [
+            'label' => (string) $seen,
+            'watch_again_url' => route('movies.watch-again', $userMovie),
+        ];
+    }
+
+    /** @return array{label: string, url: string}|null */
+    private function showState(?UserShow $userShow): ?array
+    {
+        if (! $userShow) {
+            return null;
+        }
+
+        return [
+            'label' => "In My Shows · {$userShow->status->label()}",
+            'url' => route('shows.show', $userShow->show_id),
         ];
     }
 }

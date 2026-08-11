@@ -17,17 +17,20 @@ class StatsService
     public function forUser(User $user): array
     {
         $episodesWatched = $user->watchStatuses()->whereNotNull('watched_at');
-        $moviesWatched = $user->movies()->whereNotNull('watched_at');
+        // Every viewing, not the current watched flag: a rewatch counts again,
+        // and a movie re-queued via "Watch again" still counts once.
+        $moviesWatched = $user->movieWatches();
 
         $episodeCounts = $this->watchCounts($episodesWatched);
         $movieCounts = $this->watchCounts($moviesWatched);
 
-        // Genre "taste" comes from everything tracked (shows) or actually finished
-        // (watched movies) — the movie watchlist doesn't count yet since it's just
-        // intent. Only the genres column is selected; overviews and posters stay put.
+        // Genre "taste" comes from everything tracked (shows) or actually watched
+        // at least once (movies) — an unwatched watchlist doesn't count, since
+        // it's just intent. Only the genres column is selected; overviews and
+        // posters stay put.
         $showGenres = $user->shows()->with('show:id,genres')->get()
             ->flatMap(fn ($userShow) => $userShow->show->genres ?? []);
-        $movieGenres = $moviesWatched->with('movie:id,genres')->get()
+        $movieGenres = $user->movies()->whereHas('watches')->with('movie:id,genres')->get()
             ->flatMap(fn ($userMovie) => $userMovie->movie->genres ?? []);
 
         return [
@@ -55,8 +58,10 @@ class StatsService
      */
     private function watchCounts(Relation $watched): array
     {
+        $column = $this->watchedAtColumn($watched);
+
         $counts = $watched->clone()->toBase()->selectRaw(
-            'count(*) as total, count(case when watched_at >= ? then 1 end) as this_year',
+            "count(*) as total, count(case when {$column} >= ? then 1 end) as this_year",
             [now()->startOfYear()],
         )->first();
 
@@ -72,10 +77,23 @@ class StatsService
      */
     private function watchedDays(Relation $watched): Collection
     {
+        $column = $this->watchedAtColumn($watched);
+
         return $watched->clone()->toBase()
             ->distinct()
-            ->selectRaw('date(watched_at) as day')
+            ->selectRaw("date({$column}) as day")
             ->pluck('day');
+    }
+
+    /**
+     * Always table-qualified: movieWatches() is a has-many-through whose two
+     * joined tables both carry a watched_at, so the bare column is ambiguous.
+     * Derived from the relation rather than passed in, so callers don't have to
+     * know which of them joins.
+     */
+    private function watchedAtColumn(Relation $watched): string
+    {
+        return $watched->getRelated()->qualifyColumn('watched_at');
     }
 
     /**

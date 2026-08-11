@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MovieWatch;
 use App\Models\UserMovie;
 use App\Services\Catalog\CatalogSearchService;
 use App\Support\WatchlistSort;
@@ -18,7 +19,11 @@ class MovieController extends Controller
     {
         $sort = WatchlistSort::resolve($request->string('sort')->toString());
 
-        $watchlist = $request->user()->movies()->whereNull('watched_at')->with('movie')->get();
+        // withCount so a re-queued movie can say it's been seen before without
+        // loading every watch row behind it.
+        $movies = $request->user()->movies()->with('movie')->withCount('watches')->get();
+
+        [$finished, $watchlist] = $movies->partition(fn (UserMovie $userMovie) => $userMovie->isFinished());
 
         $watchlist = WatchlistSort::apply(
             $watchlist,
@@ -29,6 +34,9 @@ class MovieController extends Controller
 
         return view('movies.index', [
             'watchlist' => $watchlist,
+            // The Finished shelf is always most-recently-watched first: the sort
+            // control is about deciding what to watch next, which this isn't.
+            'finished' => $finished->sortByDesc('watched_at')->values(),
             'sort' => $sort,
             ...$this->catalog->forRequest($request),
         ]);
@@ -38,8 +46,31 @@ class MovieController extends Controller
     {
         Gate::authorize('update', $userMovie);
 
-        $userMovie->watched_at = $userMovie->watched_at ? null : now();
-        $userMovie->save();
+        $userMovie->watched_at ? $userMovie->markUnwatched() : $userMovie->markWatched();
+
+        return back();
+    }
+
+    /** Puts a finished movie back on the watchlist without losing that it was seen. */
+    public function watchAgain(UserMovie $userMovie): RedirectResponse
+    {
+        Gate::authorize('update', $userMovie);
+
+        $userMovie->requeue();
+
+        return back()->with('status', "\"{$userMovie->movie->title}\" is back on your watchlist.");
+    }
+
+    /** Drops one viewing from the watch history. */
+    public function destroyWatch(MovieWatch $movieWatch): RedirectResponse
+    {
+        Gate::authorize('delete', $movieWatch);
+
+        $userMovie = $movieWatch->userMovie;
+
+        $movieWatch->delete();
+
+        $userMovie->syncWatchedAt();
 
         return back();
     }

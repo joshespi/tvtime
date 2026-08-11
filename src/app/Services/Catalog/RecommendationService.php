@@ -34,12 +34,18 @@ class RecommendationService
 
         // Only tmdb_id is ever read off the related records, so the wide columns
         // (overview, genres JSON, posters) stay in the database.
-        $showIds = $this->tmdbIds($user->shows()->with('show:id,tmdb_id')->get(), 'show');
+        $showRows = $user->shows()->with('show:id,tmdb_id')->get();
+        $showIds = $this->tmdbIds($showRows, 'show');
         $movieIds = $this->tmdbIds($user->movies()->with('movie:id,tmdb_id')->get(), 'movie');
 
+        // Everything tracked is filtered out of the results, paused and dropped
+        // shows included — those were deliberate no's, so they'd be the worst
+        // possible suggestions. Only actively-watched ones seed the lookup.
         $tracked = ['show' => $showIds->all(), 'movie' => $movieIds->all()];
 
-        $seeds = $this->seeds($showIds, 'show')
+        $seedShowIds = $this->tmdbIds($showRows->filter(fn ($userShow) => $userShow->status->isActive()), 'show');
+
+        $seeds = $this->seeds($seedShowIds, 'show')
             ->concat($this->seeds($movieIds, 'movie'))
             ->all();
 

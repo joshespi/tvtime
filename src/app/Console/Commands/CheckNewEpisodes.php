@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\Episode;
 use App\Models\Show;
-use App\Models\UserShow;
 use App\Notifications\NewEpisodeAired;
 use App\Services\Shows\ShowSyncService;
 use App\Support\DedupedNotifier;
@@ -20,13 +19,31 @@ class CheckNewEpisodes extends Command
 {
     public function handle(ShowSyncService $shows): void
     {
-        $tracked = Show::query()->whereHas('userShows')->get()->keyBy('id');
+        // Only shows someone is still following: a paused or dropped show
+        // costs a TMDB call per run to refresh data nobody is being notified
+        // about. Resuming one picks its new episodes up on the next run.
+        //
+        // with('user') here rather than a second query below: these are exactly
+        // the rows the notification loop needs to address.
+        $tracked = Show::query()
+            ->whereHas('userShows', fn ($query) => $query->active())
+            ->with(['userShows' => fn ($query) => $query->active()->with('user')])
+            ->get()
+            ->keyBy('id');
 
         foreach ($tracked as $show) {
             try {
                 $shows->refreshEpisodes($show);
             } catch (Throwable $e) {
                 Log::error('Failed to refresh episodes for show', ['show_id' => $show->id, 'message' => $e->getMessage()]);
+
+                continue;
+            }
+
+            // A newly aired episode un-finishes the show for anyone who had
+            // caught up, so it leaves the Finished shelf the day it returns.
+            foreach ($show->userShows as $userShow) {
+                $userShow->refreshFinishedStatus();
             }
         }
 
@@ -44,20 +61,12 @@ class CheckNewEpisodes extends Command
 
         $alreadySent = DedupedNotifier::alreadySent($newlyAiredByShow->flatten());
 
-        // One grouped query for every show's watchers, rather than one per show
-        // inside the loop below.
-        $watchingByShow = UserShow::query()
-            ->whereIn('show_id', $newlyAiredByShow->keys())
-            ->where('status', 'watching')
-            ->with('user')
-            ->get()
-            ->groupBy('show_id');
-
         $notified = 0;
 
         foreach ($newlyAiredByShow as $showId => $newlyAired) {
             foreach ($newlyAired as $episode) {
-                foreach ($watchingByShow->get($showId, collect()) as $userShow) {
+                // Already loaded above — $newlyAiredByShow is scoped to $tracked.
+                foreach ($tracked[$showId]->userShows as $userShow) {
                     if (DedupedNotifier::notifyOnce($alreadySent, $userShow->user, new NewEpisodeAired($episode), $episode)) {
                         $notified++;
                     }

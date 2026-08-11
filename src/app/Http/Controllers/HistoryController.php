@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MovieWatch;
 use App\Models\WatchStatus;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,20 +17,32 @@ class HistoryController extends Controller
         // Order + limit in SQL on both sides. The merge below can only ever
         // surface LIMIT rows, so hydrating a whole account's watch history to
         // throw ~all of it away is pure waste that grows with account age.
-        $movies = $request->user()->movies()
-            ->whereNotNull('watched_at')
-            ->with('movie')
-            ->orderByDesc('watched_at')
+        //
+        // Movies come from movie_watches rather than user_movies.watched_at, so
+        // a rewatch is its own entry and re-queueing a movie doesn't erase the
+        // fact that it was watched.
+        //
+        // Each entry carries an `actions` list rather than one nullable url key
+        // per button, so the two entry types only declare what they actually
+        // offer and the view renders them with one loop.
+        $movies = $request->user()->movieWatches()
+            ->with('userMovie.movie')
+            ->orderByDesc('movie_watches.watched_at')
             ->limit(self::LIMIT)
             ->get()
-            ->map(fn ($userMovie) => [
+            ->map(fn (MovieWatch $watch) => [
                 'type' => 'movie',
-                'watched_at' => $userMovie->watched_at,
-                'title' => $userMovie->movie->title,
-                'subtitle' => $userMovie->movie->release_date?->format('Y'),
-                'poster_url' => $userMovie->movie->posterUrl(),
-                'toggle_url' => route('movies.toggle-watched', $userMovie),
+                'watched_at' => $watch->watched_at,
+                'title' => $watch->userMovie->movie->title,
+                'subtitle' => $watch->userMovie->movie->release_date?->format('Y'),
+                'poster_url' => $watch->userMovie->movie->posterUrl(),
                 'link_url' => null,
+                'actions' => array_values(array_filter([
+                    $watch->userMovie->isFinished()
+                        ? ['label' => 'Watch again', 'url' => route('movies.watch-again', $watch->userMovie), 'variant' => 'primary']
+                        : null,
+                    ['label' => 'Remove entry', 'url' => route('movie-watches.destroy', $watch), 'method' => 'DELETE'],
+                ])),
             ]);
 
         $episodes = $request->user()->watchStatuses()
@@ -44,8 +57,10 @@ class HistoryController extends Controller
                 'title' => $watchStatus->episode->show->title,
                 'subtitle' => $watchStatus->episode->label(),
                 'poster_url' => $watchStatus->episode->show->posterUrl(),
-                'toggle_url' => route('episodes.toggle-watched', $watchStatus->episode),
                 'link_url' => route('shows.show', $watchStatus->episode->show),
+                'actions' => [
+                    ['label' => 'Mark unwatched', 'url' => route('episodes.toggle-watched', $watchStatus->episode)],
+                ],
             ]);
 
         // Merged/sorted in PHP rather than a SQL UNION across two tables; fine at this scale.

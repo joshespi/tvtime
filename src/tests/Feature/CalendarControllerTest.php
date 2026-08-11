@@ -44,6 +44,24 @@ class CalendarControllerTest extends TestCase
         $this->assertSame(1, $day['movies']->count());
     }
 
+    public function test_omits_episodes_of_shows_the_user_has_stopped_watching(): void
+    {
+        $user = User::factory()->create();
+        $targetDate = Carbon::now()->startOfMonth()->addDays(4);
+
+        $show = Show::factory()->create();
+        UserShow::factory()->dropped()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        Episode::factory()->create(['show_id' => $show->id, 'air_date' => $targetDate]);
+
+        $response = $this->actingAs($user)->get('/calendar');
+
+        $day = collect($response->viewData('weeks'))
+            ->flatten(1)
+            ->first(fn (array $day) => $day['date']->isSameDay($targetDate));
+
+        $this->assertSame(0, $day['episodes']->count());
+    }
+
     public function test_ignores_items_the_user_does_not_track(): void
     {
         $user = User::factory()->create();
