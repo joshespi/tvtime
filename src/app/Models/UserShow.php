@@ -62,15 +62,17 @@ class UserShow extends Model
 
         $aired = Episode::query()->where('show_id', $this->show_id)->aired();
 
-        // A show whose episodes haven't synced yet has nothing aired and would
-        // otherwise read as "finished" the moment it was tracked.
-        if ($aired->clone()->doesntExist()) {
+        // The unwatched probe settles the common case on its own, so it goes
+        // first and the second query only runs for a show that looks caught up.
+        if ($aired->clone()->unwatchedBy($this->user_id)->exists()) {
+            $status = TrackingStatus::Watching;
+        } elseif ($aired->clone()->doesntExist()) {
+            // A show whose episodes haven't synced yet has nothing aired, and
+            // would otherwise read as "finished" the moment it was tracked.
             return;
+        } else {
+            $status = TrackingStatus::Finished;
         }
-
-        $status = $aired->clone()->unwatchedBy($this->user_id)->exists()
-            ? TrackingStatus::Watching
-            : TrackingStatus::Finished;
 
         if ($status !== $this->status) {
             $this->update(['status' => $status]);

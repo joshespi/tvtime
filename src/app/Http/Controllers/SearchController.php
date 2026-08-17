@@ -94,8 +94,8 @@ class SearchController extends Controller
         // Adding a movie that was already watched is a rewatch, not a no-op:
         // without this the button would report success while the movie stayed
         // on the Finished shelf and never reappeared on the watchlist.
-        if ($userMovie->watched_at) {
-            $watches = $userMovie->watches()->count();
+        if ($userMovie->isFinished()) {
+            $watches = $userMovie->timesWatched();
             $userMovie->requeue();
 
             return $this->respondSuccess(

@@ -9,7 +9,7 @@
             <x-status-banner />
 
             @if ($history->isNotEmpty())
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <x-card-grid>
                     @foreach ($history as $entry)
                         <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4">
                             <x-show-poster :url="$entry['poster_url']" :alt="$entry['title']" :href="$entry['link_url'] ?: null" class="w-12 h-18" />
@@ -44,7 +44,7 @@
                             </div>
                         </div>
                     @endforeach
-                </div>
+                </x-card-grid>
             @else
                 <x-empty-state>Nothing marked watched yet.</x-empty-state>
             @endif

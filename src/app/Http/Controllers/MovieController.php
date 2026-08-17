@@ -46,7 +46,7 @@ class MovieController extends Controller
     {
         Gate::authorize('update', $userMovie);
 
-        $userMovie->watched_at ? $userMovie->markUnwatched() : $userMovie->markWatched();
+        $userMovie->isFinished() ? $userMovie->markUnwatched() : $userMovie->markWatched();
 
         return back();
     }

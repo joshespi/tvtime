@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\UserMovie;
 use App\Models\UserShow;
 use App\Services\Shows\TmdbClient;
-use App\Support\WatchCount;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -98,7 +97,13 @@ class CatalogSearchService
             ->keyBy(fn ($row) => (string) $row->{$name}->tmdb_id);
     }
 
-    /** @return array{label: string, watch_again_url?: string}|null */
+    /**
+     * Both states describe themselves the same way — a label plus at most one
+     * follow-up action — so the card renders them with a single branch instead
+     * of probing for whichever url key each type happens to set.
+     *
+     * @return array{label: string, action?: array{label: string, url: string, post: bool}}|null
+     */
     private function movieState(?UserMovie $userMovie): ?array
     {
         if (! $userMovie) {
@@ -107,7 +112,7 @@ class CatalogSearchService
 
         // Same sentence the movie cards render, so a title can't describe itself
         // one way in search results and another on the watchlist.
-        $seen = WatchCount::seen($userMovie->watches_count, $userMovie->watched_at);
+        $seen = $userMovie->seenPhrase();
 
         if (! $userMovie->isFinished()) {
             return ['label' => 'On your watchlist'.($seen ? " · {$seen}" : '')];
@@ -115,11 +120,15 @@ class CatalogSearchService
 
         return [
             'label' => (string) $seen,
-            'watch_again_url' => route('movies.watch-again', $userMovie),
+            'action' => [
+                'label' => 'Watch again',
+                'url' => route('movies.watch-again', $userMovie),
+                'post' => true,
+            ],
         ];
     }
 
-    /** @return array{label: string, url: string}|null */
+    /** @return array{label: string, action?: array{label: string, url: string, post: bool}}|null */
     private function showState(?UserShow $userShow): ?array
     {
         if (! $userShow) {
@@ -128,7 +137,11 @@ class CatalogSearchService
 
         return [
             'label' => "In My Shows · {$userShow->status->label()}",
-            'url' => route('shows.show', $userShow->show_id),
+            'action' => [
+                'label' => 'View',
+                'url' => route('shows.show', $userShow->show_id),
+                'post' => false,
+            ],
         ];
     }
 }

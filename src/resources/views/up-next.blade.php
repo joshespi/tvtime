@@ -13,7 +13,7 @@
 
             @if ($upNext->isNotEmpty())
                 <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Episodes</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <x-card-grid>
                     @foreach ($upNext as $entry)
                         <x-show-episode-card :show="$entry['show']">
                             <x-slot:meta>
@@ -26,12 +26,12 @@
                             </form>
                         </x-show-episode-card>
                     @endforeach
-                </div>
+                </x-card-grid>
             @endif
 
             @if ($airingSoon->isNotEmpty())
                 <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Airing Soon</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <x-card-grid>
                     @foreach ($airingSoon as $entry)
                         <x-show-episode-card :show="$entry['show']">
                             <x-slot:meta>
@@ -40,21 +40,18 @@
                             </x-slot:meta>
                         </x-show-episode-card>
                     @endforeach
-                </div>
+                </x-card-grid>
             @endif
 
             @if ($movieWatchlist->isNotEmpty())
                 <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Movies to Watch</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <x-card-grid>
                     @foreach ($movieWatchlist as $userMovie)
                         <x-movie-card :user-movie="$userMovie" compact>
-                            <form method="POST" action="{{ route('movies.toggle-watched', $userMovie) }}">
-                                @csrf
-                                <x-action-button>{{ $userMovie->watches_count ? 'Mark watched again' : 'Mark watched' }}</x-action-button>
-                            </form>
+                            <x-mark-watched-button :user-movie="$userMovie" />
                         </x-movie-card>
                     @endforeach
-                </div>
+                </x-card-grid>
             @endif
 
             @if ($upNext->isEmpty() && $airingSoon->isEmpty() && $movieWatchlist->isEmpty())
@@ -65,12 +62,13 @@
             @endif
 
             @if (! empty($recommendations))
-                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Recommended for You</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    @foreach ($recommendations as $result)
-                        <x-catalog-result-card :result="$result" />
-                    @endforeach
-                </div>
+                <x-collapsible-section title="Recommended for You" storage-key="dashboard.recommendations">
+                    <x-card-grid>
+                        @foreach ($recommendations as $result)
+                            <x-catalog-result-card :result="$result" />
+                        @endforeach
+                    </x-card-grid>
+                </x-collapsible-section>
             @endif
 
         </div>

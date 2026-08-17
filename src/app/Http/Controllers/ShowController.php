@@ -32,13 +32,14 @@ class ShowController extends Controller
             fn (UserShow $userShow) => $userShow->show->title,
         );
 
-        // Paused/dropped shows sink below the active ones while keeping the
-        // chosen sort within each group — PHP's sort is stable, so this is a
-        // partition rather than a re-sort.
-        $tracked = $tracked->sortBy(fn (UserShow $userShow) => $userShow->status->isActive() ? 0 : 1);
+        // Three shelves, each keeping the chosen sort within itself: what's
+        // being watched, what's caught up, and what's deliberately not being
+        // followed. The shelf is what says how closely a show is followed, so
+        // paused and dropped ones don't sit in a list headed "Tracking".
+        [$inactive, $tracked] = $tracked->partition(
+            fn (UserShow $userShow) => ! $userShow->status->isActive()
+        );
 
-        // Caught-up shows get their own shelf rather than padding the list of
-        // things there's actually something to watch on.
         [$finished, $tracked] = $tracked->partition(
             fn (UserShow $userShow) => $userShow->status === TrackingStatus::Finished
         );
@@ -46,6 +47,7 @@ class ShowController extends Controller
         return view('shows.index', [
             'tracked' => $tracked->values(),
             'finished' => $finished->values(),
+            'inactive' => $inactive->values(),
             'sort' => $sort,
             ...$this->catalog->forRequest($request),
         ]);

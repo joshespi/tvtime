@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\WatchCount;
 use Database\Factories\UserMovieFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -54,6 +55,27 @@ class UserMovie extends Model
     public function isFinished(): bool
     {
         return $this->watched_at !== null;
+    }
+
+    /**
+     * How many completed viewings this movie has. Prefers the withCount value
+     * the list pages already load, but falls back to a query so a caller that
+     * forgot withCount('watches') pays a query rather than silently reporting
+     * a movie as never seen.
+     */
+    public function timesWatched(): int
+    {
+        return (int) ($this->watches_count ?? $this->watches()->count());
+    }
+
+    /**
+     * How this movie's viewing history reads on a card, e.g. "Watched twice ·
+     * last on May 3, 2025" — null when it's never been seen. Lives here so the
+     * cards and the search results can't pair the count with a different date.
+     */
+    public function seenPhrase(): ?string
+    {
+        return WatchCount::seen($this->timesWatched(), $this->watched_at);
     }
 
     /** Records a completed viewing and moves the movie off the watchlist. */

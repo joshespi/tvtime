@@ -263,7 +263,8 @@ class SearchControllerTest extends TestCase
         $response->assertOk();
         $tracked = $response->viewData('results')[0]['tracked'];
         $this->assertStringContainsString('Watched once', $tracked['label']);
-        $this->assertSame(route('movies.watch-again', $user->movies()->first()), $tracked['watch_again_url']);
+        $this->assertSame(route('movies.watch-again', $user->movies()->first()), $tracked['action']['url']);
+        $this->assertTrue($tracked['action']['post']);
     }
 
     public function test_search_results_for_untracked_titles_are_not_annotated(): void

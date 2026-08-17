@@ -1,8 +1,9 @@
 @props(['userShow'])
 
-{{-- Shared by the tracking list and the Finished shelf on /shows; paused and
-     dropped shows dim, since they're deliberately not being followed. --}}
-<div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4 {{ $userShow->status->isActive() ? '' : 'opacity-60' }}">
+{{-- Shared by all three shelves on /shows (Tracking, Finished, Not Tracking).
+     The shelf a card sits on carries how closely the show is being followed, so
+     the card itself doesn't restate the status. --}}
+<div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4">
     <x-show-poster :url="$userShow->show->posterUrl()" :alt="$userShow->show->title"
                    :href="route('shows.show', $userShow->show)" />
     <div class="min-w-0 flex-1 flex flex-col gap-2">

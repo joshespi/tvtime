@@ -5,9 +5,9 @@ namespace App\Support;
 use Carbon\CarbonInterface;
 
 /**
- * How a number of viewings reads in prose — shared by the movie cards, the
- * catalog search results and the watch history so they can't word the same
- * fact differently.
+ * How a number of viewings reads in prose — the pure formatter behind
+ * UserMovie::seenPhrase() and the rewatch confirmation, so the same fact can't
+ * be worded two ways.
  */
 class WatchCount
 {
@@ -28,11 +28,11 @@ class WatchCount
      */
     public static function seen(int $times, ?CarbonInterface $lastWatchedAt): ?string
     {
-        if ($times < 1 && ! $lastWatchedAt) {
+        if ($times < 1) {
             return null;
         }
 
-        $seen = $times > 0 ? 'Watched '.self::phrase($times) : 'Watched';
+        $seen = 'Watched '.self::phrase($times);
 
         return $lastWatchedAt
             ? $seen.' · last on '.$lastWatchedAt->format('M j, Y')

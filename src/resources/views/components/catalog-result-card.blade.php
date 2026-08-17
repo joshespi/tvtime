@@ -30,31 +30,33 @@
                  again, which previously read as if it had never been watched. --}}
             <div class="flex items-center gap-3">
                 <span class="text-xs text-emerald-700 dark:text-emerald-400">&#10003; {{ $tracked['label'] }}</span>
-                @if (! empty($tracked['watch_again_url']))
-                    <form method="POST" action="{{ $tracked['watch_again_url'] }}">
-                        @csrf
-                        <x-action-button>Watch again</x-action-button>
-                    </form>
-                @elseif (! empty($tracked['url']))
-                    <a href="{{ $tracked['url'] }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">View</a>
+                @if ($action = $tracked['action'] ?? null)
+                    @if ($action['post'])
+                        <form method="POST" action="{{ $action['url'] }}">
+                            @csrf
+                            <x-action-button>{{ $action['label'] }}</x-action-button>
+                        </form>
+                    @else
+                        <a href="{{ $action['url'] }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">{{ $action['label'] }}</a>
+                    @endif
                 @endif
             </div>
         @else
-        <div>
-            <form method="POST" action="{{ route('search.store') }}" @submit.prevent="track()">
-                @csrf
-                <input type="hidden" name="type" value="{{ $result['type'] }}">
-                <input type="hidden" name="external_id" value="{{ $result['id'] }}">
-                <button type="submit" :disabled="status === 'loading' || status === 'done'"
-                        class="{{ \App\Support\ButtonStyle::BASE }} gap-1 disabled:opacity-75"
-                        :class="status === 'done' ? @js(\App\Support\ButtonStyle::variant('success')) : @js(\App\Support\ButtonStyle::variant('secondary'))">
-                    <span x-show="status === 'idle' || status === 'error'">{{ $result['type'] === 'movie' ? 'Add to watchlist' : 'Track' }}</span>
-                    <span x-show="status === 'loading'">Working&hellip;</span>
-                    <span x-show="status === 'done'">&#10003; {{ $result['type'] === 'movie' ? 'Added' : 'Tracking' }}</span>
-                </button>
-            </form>
-            <p x-show="status === 'error'" x-text="message" class="text-xs text-red-600 dark:text-red-400 mt-1"></p>
-        </div>
+            <div>
+                <form method="POST" action="{{ route('search.store') }}" @submit.prevent="track()">
+                    @csrf
+                    <input type="hidden" name="type" value="{{ $result['type'] }}">
+                    <input type="hidden" name="external_id" value="{{ $result['id'] }}">
+                    <button type="submit" :disabled="status === 'loading' || status === 'done'"
+                            class="{{ \App\Support\ButtonStyle::BASE }} gap-1 disabled:opacity-75"
+                            :class="status === 'done' ? @js(\App\Support\ButtonStyle::variant('success')) : @js(\App\Support\ButtonStyle::variant('secondary'))">
+                        <span x-show="status === 'idle' || status === 'error'">{{ $result['type'] === 'movie' ? 'Add to watchlist' : 'Track' }}</span>
+                        <span x-show="status === 'loading'">Working&hellip;</span>
+                        <span x-show="status === 'done'">&#10003; {{ $result['type'] === 'movie' ? 'Added' : 'Tracking' }}</span>
+                    </button>
+                </form>
+                <p x-show="status === 'error'" x-text="message" class="text-xs text-red-600 dark:text-red-400 mt-1"></p>
+            </div>
         @endif
     </div>
 </div>

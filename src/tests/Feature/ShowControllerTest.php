@@ -89,19 +89,37 @@ class ShowControllerTest extends TestCase
         $this->assertSame(['Caught Up'], $response->viewData('finished')->pluck('show.title')->all());
     }
 
-    public function test_index_sinks_paused_and_dropped_shows_below_active_ones(): void
+    public function test_index_lists_paused_and_dropped_shows_on_their_own_shelf(): void
     {
         $user = User::factory()->create();
         $apple = Show::factory()->create(['title' => 'Apple']);
+        $banana = Show::factory()->create(['title' => 'Banana']);
         $zebra = Show::factory()->create(['title' => 'Zebra']);
 
         UserShow::factory()->paused()->create(['user_id' => $user->id, 'show_id' => $apple->id]);
+        UserShow::factory()->dropped()->create(['user_id' => $user->id, 'show_id' => $banana->id]);
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $zebra->id]);
 
         $response = $this->actingAs($user)->get('/shows?sort=title');
 
         $response->assertOk();
-        $this->assertSame(['Zebra', 'Apple'], $response->viewData('tracked')->pluck('show.title')->all());
+        $response->assertSee('Not Tracking');
+        $this->assertSame(['Zebra'], $response->viewData('tracked')->pluck('show.title')->all());
+        $this->assertSame(['Apple', 'Banana'], $response->viewData('inactive')->pluck('show.title')->all());
+    }
+
+    public function test_index_keeps_finished_shows_out_of_the_not_tracking_shelf(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create(['title' => 'Caught Up']);
+
+        UserShow::factory()->finished()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+
+        $response = $this->actingAs($user)->get('/shows');
+
+        $response->assertOk();
+        $this->assertSame(['Caught Up'], $response->viewData('finished')->pluck('show.title')->all());
+        $this->assertCount(0, $response->viewData('inactive'));
     }
 
     public function test_update_status_stops_watching_without_removing_the_show(): void

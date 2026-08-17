@@ -21,13 +21,10 @@
             @endif
 
             @if ($watchlist->isNotEmpty())
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <x-card-grid>
                     @foreach ($watchlist as $userMovie)
                         <x-movie-card :user-movie="$userMovie">
-                            <form method="POST" action="{{ route('movies.toggle-watched', $userMovie) }}">
-                                @csrf
-                                <x-action-button variant="primary">{{ $userMovie->watches_count ? 'Mark watched again' : 'Mark watched' }}</x-action-button>
-                            </form>
+                            <x-mark-watched-button :user-movie="$userMovie" variant="primary" />
                             <form method="POST" action="{{ route('movies.destroy', $userMovie) }}" onsubmit="return confirm('Remove this movie from your list?')">
                                 @csrf
                                 @method('DELETE')
@@ -35,34 +32,33 @@
                             </form>
                         </x-movie-card>
                     @endforeach
-                </div>
+                </x-card-grid>
             @else
                 <x-empty-state>Your watchlist is empty.</x-empty-state>
             @endif
 
             @if ($finished->isNotEmpty())
-                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide pt-6 px-1">
-                    Finished <span class="font-normal normal-case">({{ $finished->count() }})</span>
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    @foreach ($finished as $userMovie)
-                        <x-movie-card :user-movie="$userMovie">
-                            <form method="POST" action="{{ route('movies.watch-again', $userMovie) }}">
-                                @csrf
-                                <x-action-button variant="primary">Watch again</x-action-button>
-                            </form>
-                            <form method="POST" action="{{ route('movies.toggle-watched', $userMovie) }}">
-                                @csrf
-                                <x-action-button>Mark unwatched</x-action-button>
-                            </form>
-                            <form method="POST" action="{{ route('movies.destroy', $userMovie) }}" onsubmit="return confirm('Remove this movie and its watch history?')">
-                                @csrf
-                                @method('DELETE')
-                                <x-action-button>Remove</x-action-button>
-                            </form>
-                        </x-movie-card>
-                    @endforeach
-                </div>
+                <x-collapsible-section title="Finished" :count="$finished->count()" storage-key="movies.finished">
+                    <x-card-grid>
+                        @foreach ($finished as $userMovie)
+                            <x-movie-card :user-movie="$userMovie">
+                                <form method="POST" action="{{ route('movies.watch-again', $userMovie) }}">
+                                    @csrf
+                                    <x-action-button variant="primary">Watch again</x-action-button>
+                                </form>
+                                <form method="POST" action="{{ route('movies.toggle-watched', $userMovie) }}">
+                                    @csrf
+                                    <x-action-button>Mark unwatched</x-action-button>
+                                </form>
+                                <form method="POST" action="{{ route('movies.destroy', $userMovie) }}" onsubmit="return confirm('Remove this movie and its watch history?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <x-action-button>Remove</x-action-button>
+                                </form>
+                            </x-movie-card>
+                        @endforeach
+                    </x-card-grid>
+                </x-collapsible-section>
             @endif
 
         </div>
