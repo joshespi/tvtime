@@ -43,8 +43,8 @@
                     Keep track of what you're<br class="hidden sm:block"> actually watching.
                 </h1>
                 <p class="mt-5 max-w-2xl mx-auto text-lg text-gray-600 dark:text-gray-400">
-                    A simple, self-hosted show tracker. Follow your shows, mark episodes as you watch,
-                    and get notified the moment something new airs — no ads, no algorithm, no data leaving your server.
+                    A simple show tracker, hosted here for free. Follow your shows, mark episodes as you watch,
+                    and get notified the moment something new airs — no ads, no algorithm, no tracking.
                 </p>
                 <div class="mt-8 flex items-center justify-center gap-3">
                     @auth
@@ -100,9 +100,10 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                             </svg>
                         </div>
-                        <h3 class="mt-4 font-semibold">Self-hosted &amp; private</h3>
+                        <h3 class="mt-4 font-semibold">Open source &amp; ad-free</h3>
                         <p class="mt-1.5 text-sm text-gray-600 dark:text-gray-400">
-                            No ads, no analytics, no third parties. Your watch history stays on your own server.
+                            No ads, no analytics, no third parties. Prefer to run your own copy?
+                            <a href="https://github.com/joshespi/tvtime" target="_blank" rel="noopener" class="text-indigo-600 dark:text-indigo-400 hover:underline">The code is on GitHub</a>.
                         </p>
                     </div>
                 </div>
@@ -111,7 +112,8 @@
 
         <footer class="border-t border-gray-200 dark:border-gray-800">
             <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
-                {{ config('app.name', 'TV Tracker') }} &middot; self-hosted &amp; open source
+                {{ config('app.name', 'TV Tracker') }} &middot;
+                <a href="https://github.com/joshespi/tvtime" target="_blank" rel="noopener" class="hover:underline">open source</a>
             </div>
         </footer>
 

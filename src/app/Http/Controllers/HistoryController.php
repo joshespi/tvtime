@@ -36,7 +36,7 @@ class HistoryController extends Controller
                 'title' => $watch->userMovie->movie->title,
                 'subtitle' => $watch->userMovie->movie->release_date?->format('Y'),
                 'poster_url' => $watch->userMovie->movie->posterUrl(),
-                'link_url' => null,
+                'link_url' => route('catalog.show', ['type' => 'movie', 'tmdbId' => $watch->userMovie->movie->tmdb_id]),
                 'actions' => array_values(array_filter([
                     $watch->userMovie->isFinished()
                         ? ['label' => 'Watch again', 'url' => route('movies.watch-again', $watch->userMovie), 'variant' => 'primary']

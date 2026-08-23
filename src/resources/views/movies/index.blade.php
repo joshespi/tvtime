@@ -42,14 +42,7 @@
                     <x-card-grid>
                         @foreach ($finished as $userMovie)
                             <x-movie-card :user-movie="$userMovie">
-                                <form method="POST" action="{{ route('movies.watch-again', $userMovie) }}">
-                                    @csrf
-                                    <x-action-button variant="primary">Watch again</x-action-button>
-                                </form>
-                                <form method="POST" action="{{ route('movies.toggle-watched', $userMovie) }}">
-                                    @csrf
-                                    <x-action-button>Mark unwatched</x-action-button>
-                                </form>
+                                <x-finished-movie-actions :user-movie="$userMovie" />
                                 <form method="POST" action="{{ route('movies.destroy', $userMovie) }}" onsubmit="return confirm('Remove this movie and its watch history?')">
                                     @csrf
                                     @method('DELETE')

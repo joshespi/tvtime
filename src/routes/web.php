@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShowController;
 use App\Http\Controllers\StatsController;
@@ -25,6 +27,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('search.suggest');
     Route::post('/search', [SearchController::class, 'store'])->name('search.store');
+
+    Route::get('/catalog/{type}/{tmdbId}', [CatalogController::class, 'show'])
+        ->where('type', 'show|movie')
+        ->name('catalog.show');
+
+    Route::post('/recommendations/dismiss', [RecommendationController::class, 'dismiss'])->name('recommendations.dismiss');
 
     Route::get('/shows', [ShowController::class, 'index'])->name('shows.index');
     Route::get('/shows/{show}', [ShowController::class, 'show'])->name('shows.show');

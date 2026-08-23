@@ -54,4 +54,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(WatchStatus::class);
     }
+
+    /** Recommendations this user has said "not interested" to. */
+    public function dismissedRecommendations(): HasMany
+    {
+        return $this->hasMany(DismissedRecommendation::class);
+    }
 }

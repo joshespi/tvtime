@@ -80,11 +80,14 @@ class CatalogSearchService
      * The user's rows for the given TMDB ids, keyed by TMDB id. Only the id
      * columns are selected — nothing here renders the stored metadata.
      *
+     * Public so CatalogController can reuse it for its own single-id "is this
+     * already tracked?" lookup, rather than re-deriving the same whereHas query.
+     *
      * @param  HasMany<UserMovie|UserShow, User>  $relation
      * @param  array<int, string>  $tmdbIds
      * @return Collection<string, UserMovie|UserShow>
      */
-    private function trackedByTmdbId(HasMany $relation, string $name, array $tmdbIds): Collection
+    public function trackedByTmdbId(HasMany $relation, string $name, array $tmdbIds): Collection
     {
         if ($tmdbIds === []) {
             return collect();

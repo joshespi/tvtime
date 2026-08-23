@@ -38,10 +38,17 @@ class RecommendationService
         $showIds = $this->tmdbIds($showRows, 'show');
         $movieIds = $this->tmdbIds($user->movies()->with('movie:id,tmdb_id')->get(), 'movie');
 
-        // Everything tracked is filtered out of the results, paused and dropped
-        // shows included — those were deliberate no's, so they'd be the worst
-        // possible suggestions. Only actively-watched ones seed the lookup.
-        $tracked = ['show' => $showIds->all(), 'movie' => $movieIds->all()];
+        // Everything tracked or dismissed is filtered out of the results, paused
+        // and dropped shows included — those were deliberate no's, so they'd be
+        // the worst possible suggestions. Only actively-watched ones seed the
+        // lookup. "Not interested" persists across cache misses the same way, so
+        // a dismissed title can't reappear just because its seed rotated out and
+        // back in, or the 12h cache expired.
+        $dismissed = $user->dismissedRecommendations()->get(['type', 'tmdb_id'])->groupBy('type');
+        $excluded = [
+            'show' => $showIds->concat($dismissed->get('show', collect())->pluck('tmdb_id'))->all(),
+            'movie' => $movieIds->concat($dismissed->get('movie', collect())->pluck('tmdb_id'))->all(),
+        ];
 
         $seedShowIds = $this->tmdbIds($showRows->filter(fn ($userShow) => $userShow->status->isActive()), 'show');
 
@@ -50,7 +57,7 @@ class RecommendationService
             ->all();
 
         return collect($this->fetch($seeds))
-            ->reject(fn (array $result) => in_array($result['id'], $tracked[$result['type']], true))
+            ->reject(fn (array $result) => in_array($result['id'], $excluded[$result['type']], true))
             ->unique(fn (array $result) => $result['type'].':'.$result['id'])
             ->sortByDesc('vote_average')
             ->take(self::RESULT_LIMIT)

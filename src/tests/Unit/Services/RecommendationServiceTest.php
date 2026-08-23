@@ -105,6 +105,24 @@ class RecommendationServiceTest extends TestCase
         $this->assertSame('movie', $results[0]['type']);
     }
 
+    public function test_excludes_recommendations_the_user_dismissed_as_not_interested(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create(['tmdb_id' => '1396']);
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $user->dismissedRecommendations()->create(['type' => 'show', 'tmdb_id' => '2']);
+
+        Http::fake([
+            'api.themoviedb.org/3/tv/1396/recommendations*' => Http::response([
+                'results' => [
+                    ['id' => 2, 'name' => 'Dismissed', 'first_air_date' => '2015-02-08', 'poster_path' => null, 'overview' => 'o', 'vote_average' => 8.5],
+                ],
+            ]),
+        ]);
+
+        $this->assertSame([], $this->service->forUser($user));
+    }
+
     public function test_returns_empty_when_nothing_is_tracked(): void
     {
         $user = User::factory()->create();

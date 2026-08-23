@@ -65,7 +65,7 @@
                 <x-collapsible-section title="Recommended for You" storage-key="dashboard.recommendations">
                     <x-card-grid>
                         @foreach ($recommendations as $result)
-                            <x-catalog-result-card :result="$result" />
+                            <x-catalog-result-card :result="$result" dismissible />
                         @endforeach
                     </x-card-grid>
                 </x-collapsible-section>

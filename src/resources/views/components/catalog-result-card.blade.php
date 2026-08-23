@@ -1,13 +1,16 @@
-@props(['result'])
+@props(['result', 'dismissible' => false])
 
-<div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4"
-     x-data="trackButton(@js(route('search.store')), @js($result['type']), @js($result['id']))">
+@php
+    $detailUrl = route('catalog.show', ['type' => $result['type'], 'tmdbId' => $result['id']]);
+@endphp
+
+<div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4">
     {{-- ?? null tolerates search results cached before poster_url moved into TmdbClient::mapResult(). --}}
-    <x-show-poster :url="$result['poster_url'] ?? null" :alt="$result['title']" />
+    <x-show-poster :url="$result['poster_url'] ?? null" :alt="$result['title']" :href="$detailUrl" />
     <div class="min-w-0 flex-1 flex flex-col gap-2">
         <div class="min-w-0">
             <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                {{ $result['title'] }}
+                <a href="{{ $detailUrl }}" class="hover:underline">{{ $result['title'] }}</a>
                 <x-media-type-badge :type="$result['type']" />
             </p>
             <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
@@ -42,20 +45,20 @@
                 @endif
             </div>
         @else
-            <div>
-                <form method="POST" action="{{ route('search.store') }}" @submit.prevent="track()">
-                    @csrf
-                    <input type="hidden" name="type" value="{{ $result['type'] }}">
-                    <input type="hidden" name="external_id" value="{{ $result['id'] }}">
-                    <button type="submit" :disabled="status === 'loading' || status === 'done'"
-                            class="{{ \App\Support\ButtonStyle::BASE }} gap-1 disabled:opacity-75"
-                            :class="status === 'done' ? @js(\App\Support\ButtonStyle::variant('success')) : @js(\App\Support\ButtonStyle::variant('secondary'))">
-                        <span x-show="status === 'idle' || status === 'error'">{{ $result['type'] === 'movie' ? 'Add to watchlist' : 'Track' }}</span>
-                        <span x-show="status === 'loading'">Working&hellip;</span>
-                        <span x-show="status === 'done'">&#10003; {{ $result['type'] === 'movie' ? 'Added' : 'Tracking' }}</span>
-                    </button>
-                </form>
-                <p x-show="status === 'error'" x-text="message" class="text-xs text-red-600 dark:text-red-400 mt-1"></p>
+            <div class="flex items-center gap-3">
+                <x-track-button :type="$result['type']" :tmdb-id="$result['id']" />
+                @if ($dismissible)
+                    {{-- Plain form, no Alpine — "not interested" just reloads the
+                         section with the card gone, same as every other list action. --}}
+                    <form method="POST" action="{{ route('recommendations.dismiss') }}">
+                        @csrf
+                        <input type="hidden" name="type" value="{{ $result['type'] }}">
+                        <input type="hidden" name="tmdb_id" value="{{ $result['id'] }}">
+                        <button type="submit" class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:underline">
+                            Not interested
+                        </button>
+                    </form>
+                @endif
             </div>
         @endif
     </div>
