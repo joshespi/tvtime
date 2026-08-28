@@ -30,14 +30,17 @@
                     @if ($show->overview)
                         <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{{ $show->overview }}</p>
                     @endif
-                    <div class="mt-3 flex items-center gap-2">
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
                         <x-tracking-status-select :user-show="$userShow" />
+                        <x-trailer-link :trailer-key="$show->trailer_key" />
                         @unless ($userShow->status->isActive())
                             <span class="text-xs text-gray-400 dark:text-gray-500">No dashboard entries, calendar dates or notifications.</span>
                         @endunless
                     </div>
                 </div>
             </div>
+
+            <x-cast-list :cast="$show->cast ?? []" />
 
             @forelse ($seasons as $season => $episodes)
                 <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl">

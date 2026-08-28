@@ -26,6 +26,8 @@ class ShowSyncService
             'vote_average' => $show['vote_average'] ?? null,
             'genres' => $show['genres'] ?? [],
             'first_air_date' => $show['first_air_date'] ?? null,
+            'cast' => $show['cast'] ?? [],
+            'trailer_key' => $show['trailer_key'] ?? null,
             'synced_at' => now(),
         ];
 
@@ -44,7 +46,10 @@ class ShowSyncService
         }
 
         $externalId = (string) $show->tmdb_id;
-        $details = $this->tmdb->show($externalId);
+        // Cast/trailer barely change once a title's out, so this skips that part
+        // of the payload — this runs daily for every tracked show, unlike store()
+        // which only runs once when a show is first tracked.
+        $details = $this->tmdb->show($externalId, append: []);
 
         if (! $details) {
             Log::warning('Skipping episode sync, TMDB fetch failed', ['show_id' => $show->id]);

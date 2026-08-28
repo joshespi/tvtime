@@ -43,11 +43,14 @@
                         <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{{ $details['overview'] }}</p>
                     @endif
 
-                    <div class="mt-3">
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
                         {{ $slot }}
+                        <x-trailer-link :trailer-key="$details['trailer_key'] ?? null" />
                     </div>
                 </div>
             </div>
+
+            <x-cast-list :cast="$details['cast'] ?? []" />
 
         </div>
     </div>

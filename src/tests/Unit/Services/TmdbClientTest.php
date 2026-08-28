@@ -31,6 +31,16 @@ class TmdbClientTest extends TestCase
                 'vote_average' => 8.9,
                 'genres' => [['name' => 'Drama'], ['name' => 'Crime']],
                 'first_air_date' => '2008-01-20',
+                'credits' => [
+                    'cast' => [
+                        ['name' => 'Bryan Cranston', 'character' => 'Walter White', 'profile_path' => '/cranston.jpg'],
+                    ],
+                ],
+                'videos' => [
+                    'results' => [
+                        ['site' => 'YouTube', 'type' => 'Trailer', 'official' => true, 'key' => 'abc123'],
+                    ],
+                ],
             ]),
         ]);
 
@@ -46,6 +56,10 @@ class TmdbClientTest extends TestCase
             'vote_average' => 8.9,
             'genres' => ['Drama', 'Crime'],
             'first_air_date' => '2008-01-20',
+            'cast' => [
+                ['name' => 'Bryan Cranston', 'character' => 'Walter White', 'profile_path' => '/cranston.jpg'],
+            ],
+            'trailer_key' => 'abc123',
         ], $show);
     }
 
@@ -112,6 +126,16 @@ class TmdbClientTest extends TestCase
                 'vote_average' => 8.7,
                 'genres' => [['name' => 'Action']],
                 'release_date' => '1999-03-31',
+                'credits' => [
+                    'cast' => [
+                        ['name' => 'Keanu Reeves', 'character' => 'Neo', 'profile_path' => '/reeves.jpg'],
+                    ],
+                ],
+                'videos' => [
+                    'results' => [
+                        ['site' => 'YouTube', 'type' => 'Trailer', 'official' => true, 'key' => 'xyz789'],
+                    ],
+                ],
             ]),
         ]);
 
@@ -126,7 +150,35 @@ class TmdbClientTest extends TestCase
             'vote_average' => 8.7,
             'genres' => ['Action'],
             'release_date' => '1999-03-31',
+            'cast' => [
+                ['name' => 'Keanu Reeves', 'character' => 'Neo', 'profile_path' => '/reeves.jpg'],
+            ],
+            'trailer_key' => 'xyz789',
         ], $movie);
+    }
+
+    public function test_map_trailer_prefers_official_trailer_over_others(): void
+    {
+        Http::fake([
+            'api.themoviedb.org/3/movie/603*' => Http::response([
+                'id' => 603,
+                'title' => 'The Matrix',
+                'overview' => 'A hacker...',
+                'release_date' => '1999-03-31',
+                'genres' => [],
+                'videos' => [
+                    'results' => [
+                        ['site' => 'YouTube', 'type' => 'Teaser', 'official' => true, 'key' => 'teaser'],
+                        ['site' => 'YouTube', 'type' => 'Trailer', 'official' => false, 'key' => 'unofficial-trailer'],
+                        ['site' => 'YouTube', 'type' => 'Trailer', 'official' => true, 'key' => 'official-trailer'],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $movie = $this->client->movie('603');
+
+        $this->assertSame('official-trailer', $movie['trailer_key']);
     }
 
     public function test_movie_returns_null_when_the_request_fails(): void

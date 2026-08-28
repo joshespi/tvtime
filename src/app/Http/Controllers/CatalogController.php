@@ -81,7 +81,7 @@ class CatalogController extends Controller
         return view('catalog.movie', ['tmdbId' => $tmdbId, 'details' => $details, 'userMovie' => $userMovie]);
     }
 
-    /** @return array{title: string, poster_path: ?string, overview: ?string, status: ?string, vote_average: ?float, genres: array<int, string>, release_date: ?string} */
+    /** @return array{title: string, poster_path: ?string, overview: ?string, status: ?string, vote_average: ?float, genres: array<int, string>, release_date: ?string, cast: array, trailer_key: ?string} */
     private function detailsFromMovie(Movie $movie): array
     {
         return [
@@ -92,6 +92,8 @@ class CatalogController extends Controller
             'vote_average' => $movie->vote_average,
             'genres' => $movie->genres ?? [],
             'release_date' => $movie->release_date?->toDateString(),
+            'cast' => $movie->cast ?? [],
+            'trailer_key' => $movie->trailer_key,
         ];
     }
 

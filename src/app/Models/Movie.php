@@ -22,6 +22,7 @@ class Movie extends Model
             'release_date' => 'date',
             'vote_average' => 'float',
             'genres' => 'array',
+            'cast' => 'array',
         ];
     }
 

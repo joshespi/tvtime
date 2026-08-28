@@ -25,6 +25,7 @@ class Show extends Model
             'first_air_date' => 'date',
             'vote_average' => 'float',
             'genres' => 'array',
+            'cast' => 'array',
         ];
     }
 

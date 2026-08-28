@@ -10,6 +10,18 @@ use Illuminate\Support\Facades\Log;
 
 class TmdbClient
 {
+    /** How many cast members to keep off a show/movie's credits — TMDB returns the full cast, ordered by billing. */
+    private const CAST_LIMIT = 10;
+
+    /**
+     * TMDB `append_to_response` sections a full show/movie detail fetch pulls in
+     * beyond the base payload. Cast/trailer data barely changes once a title's
+     * released, so the daily refresh jobs (which already re-fetch show()/movie()
+     * for episode/status freshness) pass an empty append list instead — only an
+     * initial store() or an on-demand catalog preview needs this.
+     */
+    private const DETAIL_APPEND = ['credits', 'videos'];
+
     private string $baseUrl;
 
     private string $key;
@@ -20,10 +32,11 @@ class TmdbClient
         $this->key = (string) config('services.tmdb.key');
     }
 
-    public function show(string $id): ?array
+    /** @param  array<int, string>  $append  Which DETAIL_APPEND-style sections to request; pass [] to skip them. */
+    public function show(string $id, array $append = self::DETAIL_APPEND): ?array
     {
         try {
-            $response = $this->request()->get("/tv/{$id}", ['api_key' => $this->key]);
+            $response = $this->request()->get("/tv/{$id}", $this->params($append));
         } catch (ConnectionException $e) {
             Log::warning('TMDB show lookup failed to connect', ['id' => $id, 'message' => $e->getMessage()]);
 
@@ -46,6 +59,7 @@ class TmdbClient
             'vote_average' => $data['vote_average'] ?? null,
             'genres' => collect($data['genres'] ?? [])->pluck('name')->all(),
             'first_air_date' => $data['first_air_date'] ?: null,
+            ...$this->mapExtras($data),
         ];
     }
 
@@ -153,10 +167,11 @@ class TmdbClient
         ];
     }
 
-    public function movie(string $id): ?array
+    /** @param  array<int, string>  $append  See show()'s docblock — same rationale applies to movies. */
+    public function movie(string $id, array $append = self::DETAIL_APPEND): ?array
     {
         try {
-            $response = $this->request()->get("/movie/{$id}", ['api_key' => $this->key]);
+            $response = $this->request()->get("/movie/{$id}", $this->params($append));
         } catch (ConnectionException $e) {
             Log::warning('TMDB movie lookup failed to connect', ['id' => $id, 'message' => $e->getMessage()]);
 
@@ -178,7 +193,62 @@ class TmdbClient
             'vote_average' => $data['vote_average'] ?? null,
             'genres' => collect($data['genres'] ?? [])->pluck('name')->all(),
             'release_date' => $data['release_date'] ?: null,
+            ...$this->mapExtras($data),
         ];
+    }
+
+    /**
+     * Cast/trailer off a show/movie's `credits`/`videos` objects — only computed
+     * when the corresponding section was actually requested (append_to_response),
+     * so a caller that opted out (the daily refresh jobs) isn't doing work on
+     * data it doesn't have.
+     *
+     * @return array{cast: array<int, array{name: string, character: ?string, profile_path: ?string}>, trailer_key: ?string}
+     */
+    private function mapExtras(array $data): array
+    {
+        return [
+            'cast' => isset($data['credits']) ? $this->mapCast($data['credits']['cast'] ?? []) : [],
+            'trailer_key' => isset($data['videos']) ? $this->mapTrailer($data['videos']['results'] ?? []) : null,
+        ];
+    }
+
+    /**
+     * Top-billed cast off a show/movie's `credits` object, already ordered by
+     * TMDB's `order` field — full casts run to 50+ entries, only the leads matter here.
+     *
+     * @return array<int, array{name: string, character: ?string, profile_path: ?string}>
+     */
+    private function mapCast(array $cast): array
+    {
+        return collect($cast)
+            ->take(self::CAST_LIMIT)
+            ->map(fn (array $member) => [
+                'name' => $member['name'] ?? 'Unknown',
+                'character' => $member['character'] ?: null,
+                'profile_path' => $member['profile_path'] ?? null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * A YouTube video key for a trailer off a show/movie's `videos` object —
+     * just the key, not a full URL, since where that key gets turned into a
+     * link (youtube.com vs. an embed) is a view concern. Prefers an official
+     * trailer, falls back to any trailer, then to any YouTube video at all
+     * (a "Teaser" beats no video) — `videos.results` isn't guaranteed to
+     * contain a "Trailer"-typed entry at all.
+     */
+    private function mapTrailer(array $videos): ?string
+    {
+        $youtube = collect($videos)->filter(fn (array $video) => ($video['site'] ?? null) === 'YouTube');
+
+        $trailers = $youtube->filter(fn (array $video) => ($video['type'] ?? null) === 'Trailer');
+
+        $video = $trailers->firstWhere('official', true) ?? $trailers->first() ?? $youtube->first();
+
+        return $video['key'] ?? null;
     }
 
     /**
@@ -187,7 +257,7 @@ class TmdbClient
     public function episodes(string $id, ?int $numberOfSeasons = null): array
     {
         if ($numberOfSeasons === null) {
-            $show = $this->show($id);
+            $show = $this->show($id, append: []);
 
             if (! $show) {
                 return [];
@@ -232,6 +302,21 @@ class TmdbClient
         }
 
         return $episodes;
+    }
+
+    /**
+     * @param  array<int, string>  $append
+     * @return array{api_key: string, append_to_response?: string}
+     */
+    private function params(array $append): array
+    {
+        $params = ['api_key' => $this->key];
+
+        if ($append !== []) {
+            $params['append_to_response'] = implode(',', $append);
+        }
+
+        return $params;
     }
 
     private function request()

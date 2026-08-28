@@ -25,6 +25,8 @@ class MovieSyncService
             'vote_average' => $movie['vote_average'] ?? null,
             'genres' => $movie['genres'] ?? [],
             'release_date' => $movie['release_date'] ?? null,
+            'cast' => $movie['cast'] ?? [],
+            'trailer_key' => $movie['trailer_key'] ?? null,
             'synced_at' => now(),
         ];
 
@@ -38,7 +40,10 @@ class MovieSyncService
             return;
         }
 
-        $details = $this->tmdb->movie((string) $movie->tmdb_id);
+        // Cast/trailer barely change once a title's out, so this skips that part
+        // of the payload — this runs daily for every tracked movie, unlike store()
+        // which only runs once when a movie is first tracked.
+        $details = $this->tmdb->movie((string) $movie->tmdb_id, append: []);
 
         if (! $details) {
             return;

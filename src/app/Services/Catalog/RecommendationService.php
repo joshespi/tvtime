@@ -9,19 +9,22 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
- * Backs the "Recommended for you" section on the dashboard, seeded from the
- * user's most recently tracked shows and movies with anything already tracked
- * filtered out.
+ * Backs the "Recommended for you" section on the dashboard, seeded from a
+ * random sample of the user's tracked shows and movies with anything already
+ * tracked filtered out.
  */
 class RecommendationService
 {
     /** How long a seed item's recommendations are reused before re-hitting TMDB. */
     private const CACHE_TTL_MINUTES = 60 * 12;
 
-    /** How many of the user's most recent shows/movies feed the recommendations. */
+    /** How many of the user's shows/movies (picked at random) feed the recommendations. */
     private const SEED_LIMIT = 5;
 
     private const RESULT_LIMIT = 12;
+
+    /** How much wider than RESULT_LIMIT the rated candidate pool is before it's shuffled — gives the shuffle room to vary the display without dipping into poorly-rated results. */
+    private const CANDIDATE_POOL_MULTIPLIER = 3;
 
     public function __construct(private readonly TmdbClient $tmdb) {}
 
@@ -56,25 +59,30 @@ class RecommendationService
             ->concat($this->seeds($movieIds, 'movie'))
             ->all();
 
+        // The underlying fetch is cached for 12h, so a plain sort-and-take would
+        // show the same results on every visit within that window. Narrow to a
+        // decent-rated pool, then shuffle *per request* (not cached) so reloading
+        // the dashboard surfaces a different mix without needing to re-hit TMDB.
         return collect($this->fetch($seeds))
             ->reject(fn (array $result) => in_array($result['id'], $excluded[$result['type']], true))
             ->unique(fn (array $result) => $result['type'].':'.$result['id'])
             ->sortByDesc('vote_average')
+            ->take(self::RESULT_LIMIT * self::CANDIDATE_POOL_MULTIPLIER)
+            ->shuffle()
             ->take(self::RESULT_LIMIT)
             ->values()
             ->all();
     }
 
     /**
-     * Distinct TMDB ids off a user's tracked rows, most recently tracked first.
+     * Distinct TMDB ids off a user's tracked rows.
      *
      * @param  Collection<int, Model>  $rows
      * @return Collection<int, string>
      */
     private function tmdbIds(Collection $rows, string $relation): Collection
     {
-        return $rows->sortByDesc('created_at')
-            ->pluck("{$relation}.tmdb_id")
+        return $rows->pluck("{$relation}.tmdb_id")
             ->filter()
             ->map(fn ($id) => (string) $id)
             ->unique()
@@ -82,12 +90,21 @@ class RecommendationService
     }
 
     /**
+     * A random SEED_LIMIT of the given ids, not just the most recent — with a
+     * user who tracks more than a handful of titles, always seeding off the
+     * same few would mean always recommending off the same few. Randomizing
+     * which titles seed the lookup (each request, not cached) is what makes
+     * "Recommended for you" actually rotate across visits instead of just
+     * shuffling the display order of one fixed candidate pool.
+     *
      * @param  Collection<int, string>  $ids
      * @return Collection<int, array{type: string, id: string}>
      */
     private function seeds(Collection $ids, string $type): Collection
     {
-        return $ids->take(self::SEED_LIMIT)->map(fn (string $id) => ['type' => $type, 'id' => $id])->values();
+        return $ids->random(min($ids->count(), self::SEED_LIMIT))
+            ->map(fn (string $id) => ['type' => $type, 'id' => $id])
+            ->values();
     }
 
     /**
