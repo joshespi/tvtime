@@ -4,6 +4,8 @@ namespace App\Services\Shows;
 
 use App\Support\TmdbImage;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -25,6 +27,16 @@ class TmdbClient
     private string $baseUrl;
 
     private string $key;
+
+    /**
+     * IMDB ids already resolved this request/command run, keyed by TMDB person
+     * id — avoids re-fetching a recurring actor's id once per title they
+     * appear in (e.g. during BackfillCastAndTrailer's library-wide run).
+     * Only actually shared across callers because TmdbClient is bound as a
+     * singleton in AppServiceProvider — see that binding before assuming this
+     * cache spans more than one instance.
+     */
+    private array $imdbIdCache = [];
 
     public function __construct()
     {
@@ -107,11 +119,7 @@ class TmdbClient
         }
 
         $responses = Http::pool(fn ($pool) => collect($seeds)
-            ->map(fn (array $seed) => $pool
-                ->baseUrl($this->baseUrl)
-                ->acceptJson()
-                ->connectTimeout(2)
-                ->timeout(5)
+            ->map(fn (array $seed) => $this->pooledClient($pool)
                 ->get($this->recommendationsPath($seed), ['api_key' => $this->key]))
             ->all());
 
@@ -203,7 +211,7 @@ class TmdbClient
      * so a caller that opted out (the daily refresh jobs) isn't doing work on
      * data it doesn't have.
      *
-     * @return array{cast: array<int, array{name: string, character: ?string, profile_path: ?string}>, trailer_key: ?string}
+     * @return array{cast: array<int, array{name: string, character: ?string, profile_path: ?string, imdb_id: ?string}>, trailer_key: ?string}
      */
     private function mapExtras(array $data): array
     {
@@ -217,19 +225,60 @@ class TmdbClient
      * Top-billed cast off a show/movie's `credits` object, already ordered by
      * TMDB's `order` field — full casts run to 50+ entries, only the leads matter here.
      *
-     * @return array<int, array{name: string, character: ?string, profile_path: ?string}>
+     * @return array<int, array{name: string, character: ?string, profile_path: ?string, imdb_id: ?string}>
      */
     private function mapCast(array $cast): array
     {
-        return collect($cast)
-            ->take(self::CAST_LIMIT)
-            ->map(fn (array $member) => [
+        $topBilled = collect($cast)->take(self::CAST_LIMIT)->values();
+
+        $imdbIds = $this->fetchImdbIds($topBilled->pluck('id')->all());
+
+        return $topBilled
+            ->map(fn (array $member, int $index) => [
                 'name' => $member['name'] ?? 'Unknown',
                 'character' => $member['character'] ?: null,
                 'profile_path' => $member['profile_path'] ?? null,
+                'imdb_id' => $imdbIds[$index] ?? null,
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * IMDB person ids for a batch of TMDB person ids, fetched concurrently (one
+     * request per not-yet-cached cast member) via TMDB's `/person/{id}/external_ids`
+     * — credits don't carry an IMDB id directly. Only ever reached alongside a
+     * DETAIL_APPEND fetch (first track, an on-demand catalog preview, or the
+     * cast/trailer backfill command), never the daily refresh jobs.
+     *
+     * @param  array<int, int>  $personIds
+     * @return array<int, ?string> Same order as $personIds; null on a failed lookup.
+     */
+    private function fetchImdbIds(array $personIds): array
+    {
+        $toFetch = collect($personIds)->unique()->reject(fn (int $id) => array_key_exists($id, $this->imdbIdCache))->values();
+
+        if ($toFetch->isNotEmpty()) {
+            $responses = Http::pool(fn ($pool) => $toFetch
+                ->map(fn (int $personId) => $this->pooledClient($pool)->get("/person/{$personId}/external_ids", ['api_key' => $this->key]))
+                ->all());
+
+            foreach ($toFetch as $index => $personId) {
+                $response = $responses[$index] ?? null;
+
+                $this->imdbIdCache[$personId] = $response instanceof Response && $response->successful()
+                    ? ($response->json('imdb_id') ?: null)
+                    : null;
+            }
+        }
+
+        return collect($personIds)->map(fn (int $id) => $this->imdbIdCache[$id] ?? null)->all();
+    }
+
+    /** Shared connection config for a pooled request — same timeouts as request(), applied to a pool member instead of a standalone client. */
+    private function pooledClient(Pool $pool): PendingRequest
+    {
+        return $pool->baseUrl($this->baseUrl)->acceptJson()->connectTimeout(2)->timeout(5);
     }
 
     /**

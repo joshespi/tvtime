@@ -68,6 +68,27 @@ class ShowSyncService
         ]);
     }
 
+    /** Re-fetch cast/trailer for a show that was tracked before those columns existed. */
+    public function refreshCastAndTrailer(Show $show): void
+    {
+        if (! $show->tmdb_id) {
+            return;
+        }
+
+        $details = $this->tmdb->show((string) $show->tmdb_id);
+
+        if (! $details) {
+            Log::warning('Skipping cast/trailer backfill, TMDB fetch failed', ['show_id' => $show->id]);
+
+            return;
+        }
+
+        $show->update([
+            'cast' => $details['cast'] ?? [],
+            'trailer_key' => $details['trailer_key'] ?? null,
+        ]);
+    }
+
     /**
      * @param  array<int, array{season: int, episode_number: int, title: ?string, air_date: ?string, external_id: ?string}>  $episodes
      */

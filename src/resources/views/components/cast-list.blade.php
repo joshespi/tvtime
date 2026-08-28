@@ -17,7 +17,13 @@
                             </svg>
                         </div>
                     @endif
-                    <p class="text-xs font-medium text-gray-900 dark:text-gray-100 mt-1 truncate" title="{{ $member['name'] }}">{{ $member['name'] }}</p>
+                    <p class="text-xs font-medium text-gray-900 dark:text-gray-100 mt-1 truncate" title="{{ $member['name'] }}">
+                        @if ($imdbUrl = \App\Support\ImdbLink::personUrl($member['imdb_id'] ?? null))
+                            <a href="{{ $imdbUrl }}" target="_blank" rel="noopener noreferrer" class="hover:underline">{{ $member['name'] }}</a>
+                        @else
+                            {{ $member['name'] }}
+                        @endif
+                    </p>
                     @if (! empty($member['character']))
                         <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate" title="{{ $member['character'] }}">{{ $member['character'] }}</p>
                     @endif

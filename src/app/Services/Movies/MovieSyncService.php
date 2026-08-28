@@ -4,6 +4,7 @@ namespace App\Services\Movies;
 
 use App\Models\Movie;
 use App\Services\Shows\TmdbClient;
+use Illuminate\Support\Facades\Log;
 
 class MovieSyncService
 {
@@ -56,6 +57,27 @@ class MovieSyncService
             'vote_average' => $details['vote_average'] ?? $movie->vote_average,
             'genres' => $details['genres'] ?: $movie->genres,
             'release_date' => $details['release_date'] ?? $movie->release_date,
+        ]);
+    }
+
+    /** Re-fetch cast/trailer for a movie that was tracked before those columns existed. */
+    public function refreshCastAndTrailer(Movie $movie): void
+    {
+        if (! $movie->tmdb_id) {
+            return;
+        }
+
+        $details = $this->tmdb->movie((string) $movie->tmdb_id);
+
+        if (! $details) {
+            Log::warning('Skipping cast/trailer backfill, TMDB fetch failed', ['movie_id' => $movie->id]);
+
+            return;
+        }
+
+        $movie->update([
+            'cast' => $details['cast'] ?? [],
+            'trailer_key' => $details['trailer_key'] ?? null,
         ]);
     }
 }
