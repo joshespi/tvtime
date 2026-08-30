@@ -23,7 +23,7 @@ class CatalogSearchService
     public function search(string $query): array
     {
         // The same query gets re-issued constantly — typeahead then form submit,
-        // then again on every sort change and reload, since <x-sort-select>
+        // then again on every sort change and reload, since <x-query-select>
         // carries ?q= forward. Results are static for far longer than this TTL.
         return Cache::remember(
             'catalog:search:'.md5(mb_strtolower($query)),

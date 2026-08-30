@@ -70,6 +70,9 @@ class CatalogController extends Controller
             ->first();
 
         if ($userMovie) {
+            // Not redundant with the eager load above: trackedByTmdbId() selects
+            // only id+tmdb_id (all it needs to match), so the metadata columns
+            // detailsFromMovie() reads have to be fetched here.
             $userMovie->load('movie');
             $details = $this->detailsFromMovie($userMovie->movie);
         } else {

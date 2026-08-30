@@ -62,13 +62,23 @@
             @endif
 
             @if (! empty($recommendations))
-                <x-collapsible-section title="Recommended for You" storage-key="dashboard.recommendations">
-                    <x-card-grid>
-                        @foreach ($recommendations as $result)
-                            <x-catalog-result-card :result="$result" dismissible />
-                        @endforeach
-                    </x-card-grid>
-                </x-collapsible-section>
+                {{-- Tracking a recommendation needs a full reload (a fresh show
+                     list and a re-rolled shelf, both server-rendered) — but a
+                     plain reload would dump a mobile user back at the top. The
+                     "tracked" event is generic (track-button just announces
+                     success), only this shelf reacts to it, and setting the
+                     hash before reloading lets the browser's native anchor
+                     scroll land back here without any extra bookkeeping. --}}
+                @php $recommendationsSectionId = 'recommendations-section'; @endphp
+                <div x-data @tracked="window.location.hash = @js($recommendationsSectionId); window.location.reload()">
+                    <x-collapsible-section :id="$recommendationsSectionId" title="Recommended for You" storage-key="dashboard.recommendations">
+                        <x-card-grid>
+                            @foreach ($recommendations as $result)
+                                <x-catalog-result-card :result="$result" dismissible />
+                            @endforeach
+                        </x-card-grid>
+                    </x-collapsible-section>
+                </div>
             @endif
 
         </div>

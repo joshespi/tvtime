@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\SavesRatings;
 use App\Models\Show;
 use App\Models\UserShow;
 use App\Services\Catalog\CatalogSearchService;
+use App\Support\GenreFilter;
 use App\Support\TrackingStatus;
 use App\Support\WatchlistSort;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +17,8 @@ use Illuminate\View\View;
 
 class ShowController extends Controller
 {
+    use SavesRatings;
+
     public function __construct(private readonly CatalogSearchService $catalog) {}
 
     public function index(Request $request): View
@@ -24,6 +28,16 @@ class ShowController extends Controller
         $tracked = $request->user()->shows()
             ->with('show.nextUpcomingEpisode')
             ->get();
+
+        $genresOf = fn (UserShow $userShow) => $userShow->show->genres ?? [];
+
+        // Options are read off the full set, before filtering, so picking a
+        // genre never removes it from its own dropdown — and they're what the
+        // requested genre is validated against.
+        $genreOptions = GenreFilter::options($tracked, $genresOf);
+        $genre = GenreFilter::resolve($request->string('genre')->toString(), $genreOptions);
+
+        $tracked = GenreFilter::apply($tracked, $genre, $genresOf);
 
         $tracked = WatchlistSort::apply(
             $tracked,
@@ -49,6 +63,8 @@ class ShowController extends Controller
             'finished' => $finished->values(),
             'inactive' => $inactive->values(),
             'sort' => $sort,
+            'genre' => $genre,
+            'genreOptions' => $genreOptions,
             ...$this->catalog->forRequest($request),
         ]);
     }
@@ -85,6 +101,11 @@ class ShowController extends Controller
         return back()->with('status', "\"{$userShow->show->title}\" is now marked {$status->label()}.");
     }
 
+    public function updateRating(Request $request, UserShow $userShow): RedirectResponse
+    {
+        return $this->saveRating($request, $userShow);
+    }
+
     public function destroy(UserShow $userShow): RedirectResponse
     {
         Gate::authorize('delete', $userShow);
@@ -96,8 +117,10 @@ class ShowController extends Controller
 
     /**
      * The current user's tracking record for a show, 404ing if they don't track
-     * it. Every action on this controller is scoped that way, so the rule lives
-     * in one place rather than being restated per action.
+     * it — the read path's ownership check. The write actions instead resolve a
+     * UserShow by route-model binding and go through UserShowPolicy, so a show
+     * belonging to someone else is a 403 there and a 404 here: reads shouldn't
+     * confirm that an id exists, writes should say plainly that they're refused.
      *
      * with('show') because the status picker labels itself from the show title.
      */

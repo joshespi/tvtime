@@ -7,13 +7,13 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl">
+            <x-card padding="p-4 sm:p-8">
                 <div class="max-w-xl">
                     @include('profile.partials.update-profile-information-form')
                 </div>
-            </div>
+            </x-card>
 
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl">
+            <x-card padding="p-4 sm:p-8">
                 <div class="max-w-xl flex items-center justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Your Stats</h2>
@@ -21,31 +21,31 @@
                     </div>
                     <x-action-button variant="primary" :href="route('profile.stats')" class="shrink-0">View stats</x-action-button>
                 </div>
-            </div>
+            </x-card>
 
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl">
+            <x-card padding="p-4 sm:p-8">
                 <div class="max-w-xl">
                     @include('profile.partials.update-notifications-form')
                 </div>
-            </div>
+            </x-card>
 
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl">
+            <x-card padding="p-4 sm:p-8">
                 <div class="max-w-xl">
                     @include('profile.partials.update-recommendations-form')
                 </div>
-            </div>
+            </x-card>
 
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl">
+            <x-card padding="p-4 sm:p-8">
                 <div class="max-w-xl">
                     @include('profile.partials.update-password-form')
                 </div>
-            </div>
+            </x-card>
 
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl">
+            <x-card padding="p-4 sm:p-8">
                 <div class="max-w-xl">
                     @include('profile.partials.delete-user-form')
                 </div>
-            </div>
+            </x-card>
         </div>
     </div>
 </x-app-layout>

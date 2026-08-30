@@ -25,24 +25,25 @@ class CalendarController extends Controller
             ? Carbon::createFromFormat('Y-m-d', "{$monthParam}-01")->startOfMonth()
             : Carbon::now()->startOfMonth();
 
-        $start = $anchor->copy()->startOfMonth();
+        // $anchor is already start-of-month on both branches above, so it doubles
+        // as the range start.
         $end = $anchor->copy()->endOfMonth();
 
         $episodesByDate = Episode::query()
-            ->whereBetween('air_date', [$start->toDateString(), $end->toDateString()])
+            ->whereBetween('air_date', [$anchor->toDateString(), $end->toDateString()])
             ->whereHas('show.userShows', fn ($query) => $query->where('user_id', $userId)->active())
             ->with('show')
             ->get()
             ->groupBy(fn (Episode $episode) => $episode->air_date->toDateString());
 
         $moviesByDate = Movie::query()
-            ->whereBetween('release_date', [$start->toDateString(), $end->toDateString()])
+            ->whereBetween('release_date', [$anchor->toDateString(), $end->toDateString()])
             ->whereHas('userMovies', fn ($query) => $query->where('user_id', $userId))
             ->get()
             ->groupBy(fn (Movie $movie) => $movie->release_date->toDateString());
 
         $weeks = [];
-        $cursor = $start->copy()->startOfWeek(Carbon::SUNDAY);
+        $cursor = $anchor->copy()->startOfWeek(Carbon::SUNDAY);
         $gridEnd = $end->copy()->endOfWeek(Carbon::SUNDAY);
 
         while ($cursor->lte($gridEnd)) {

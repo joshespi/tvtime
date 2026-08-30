@@ -11,9 +11,12 @@
             <x-catalog-search :query="$query" :results="$results"
                 :action="route('shows.index')" :suggest-url="route('search.suggest')" />
 
-            <div class="flex items-center justify-between gap-2 px-1">
+            <div class="flex items-center justify-between gap-2 px-1 flex-wrap">
                 <a href="{{ route('history.index') }}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">Watch history &rarr;</a>
-                <x-sort-select :sort="$sort" :query="$query" />
+                <div class="flex items-center gap-3">
+                    <x-query-select name="genre" label="Genre" :options="$genreOptions" :selected="$genre" />
+                    <x-query-select name="sort" label="Sort by" :options="\App\Support\WatchlistSort::options()" :selected="$sort" />
+                </div>
             </div>
 
             {{-- The Tracking heading only earns its space once there's another

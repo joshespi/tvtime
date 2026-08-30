@@ -8,7 +8,7 @@
     $detailUrl = route('catalog.show', ['type' => 'movie', 'tmdbId' => $userMovie->movie->tmdb_id]);
 @endphp
 
-<div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4">
+<x-card class="flex items-start gap-4">
     <x-show-poster :url="$userMovie->movie->posterUrl()" :alt="$userMovie->movie->title"
                    :href="$detailUrl" :class="$compact ? 'w-12 h-18' : 'w-16 h-24'" />
     <div class="min-w-0 flex-1 flex flex-col gap-2">
@@ -25,6 +25,9 @@
                     @endif
                     @if ($userMovie->movie->vote_average)
                         · &#9733; {{ number_format($userMovie->movie->vote_average, 1) }}
+                    @endif
+                    @if ($userMovie->rating)
+                        · Your rating: {{ $userMovie->rating }}/10
                     @endif
                 </span>
                 <x-countdown :date="$userMovie->movie->release_date" />
@@ -43,4 +46,4 @@
             {{ $slot }}
         </div>
     </div>
-</div>
+</x-card>

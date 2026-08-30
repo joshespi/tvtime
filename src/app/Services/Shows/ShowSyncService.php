@@ -4,10 +4,13 @@ namespace App\Services\Shows;
 
 use App\Models\Episode;
 use App\Models\Show;
+use App\Services\Concerns\RefreshesCastAndTrailer;
 use Illuminate\Support\Facades\Log;
 
 class ShowSyncService
 {
+    use RefreshesCastAndTrailer;
+
     public function __construct(private readonly TmdbClient $tmdb) {}
 
     public function store(string $externalId): Show
@@ -71,22 +74,7 @@ class ShowSyncService
     /** Re-fetch cast/trailer for a show that was tracked before those columns existed. */
     public function refreshCastAndTrailer(Show $show): void
     {
-        if (! $show->tmdb_id) {
-            return;
-        }
-
-        $details = $this->tmdb->show((string) $show->tmdb_id);
-
-        if (! $details) {
-            Log::warning('Skipping cast/trailer backfill, TMDB fetch failed', ['show_id' => $show->id]);
-
-            return;
-        }
-
-        $show->update([
-            'cast' => $details['cast'] ?? [],
-            'trailer_key' => $details['trailer_key'] ?? null,
-        ]);
+        $this->backfillCastAndTrailer($show, fn (string $id) => $this->tmdb->show($id));
     }
 
     /**

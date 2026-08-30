@@ -52,9 +52,8 @@ class UpNextController extends Controller
             ->inWatchlist()
             ->with('movie')
             ->withCount('watches')
-            ->get()
-            ->sortByDesc('created_at')
-            ->values();
+            ->orderByDesc('created_at')
+            ->get();
 
         return view('up-next', [
             'upNext' => $upNext,

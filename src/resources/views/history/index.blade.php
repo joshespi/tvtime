@@ -8,19 +8,19 @@
 
             <x-status-banner />
 
+            <div class="flex justify-end px-1">
+                <a href="{{ route('history.export') }}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">Export CSV &darr;</a>
+            </div>
+
             @if ($history->isNotEmpty())
                 <x-card-grid>
                     @foreach ($history as $entry)
-                        <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4">
-                            <x-show-poster :url="$entry['poster_url']" :alt="$entry['title']" :href="$entry['link_url'] ?: null" class="w-12 h-18" />
+                        <x-card class="flex items-start gap-4">
+                            <x-show-poster :url="$entry['poster_url']" :alt="$entry['title']" :href="$entry['link_url']" class="w-12 h-18" />
                             <div class="min-w-0 flex-1 flex flex-col gap-2">
                                 <div class="min-w-0">
                                     <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                        @if ($entry['link_url'])
-                                            <a href="{{ $entry['link_url'] }}" class="hover:underline">{{ $entry['title'] }}</a>
-                                        @else
-                                            {{ $entry['title'] }}
-                                        @endif
+                                        <a href="{{ $entry['link_url'] }}" class="hover:underline">{{ $entry['title'] }}</a>
                                         <x-media-type-badge :type="$entry['type']" />
                                     </p>
                                     @if ($entry['subtitle'])
@@ -42,7 +42,7 @@
                                     @endforeach
                                 </div>
                             </div>
-                        </div>
+                        </x-card>
                     @endforeach
                 </x-card-grid>
             @else

@@ -1,7 +1,6 @@
 @props(['query' => '', 'results' => [], 'action', 'suggestUrl'])
 
-<div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4"
-     x-data="catalogSearch(@js($suggestUrl))">
+<x-card x-data="catalogSearch(@js($suggestUrl))">
     <form method="GET" action="{{ $action }}" class="flex gap-2" x-ref="form" @submit="open = false">
         <div class="relative flex-1">
             <input type="text" name="q" value="{{ $query }}" x-ref="input" x-model="query"
@@ -27,17 +26,15 @@
                         <span class="min-w-0 flex-1 truncate text-sm text-gray-900 dark:text-gray-100" x-text="suggestion.title"></span>
                         <span class="shrink-0 text-[10px] text-gray-400 dark:text-gray-500" x-text="suggestion.date ? suggestion.date.slice(0, 4) : ''"></span>
                         <span class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium uppercase"
-                              :class="suggestion.type === 'movie' ? 'bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400' : 'bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400'"
-                              x-text="suggestion.type === 'movie' ? 'Movie' : 'TV'"></span>
+                              :class="suggestion.type === 'movie' ? @js(\App\Support\MediaTypeStyle::classes('movie')) : @js(\App\Support\MediaTypeStyle::classes('show'))"
+                              x-text="suggestion.type === 'movie' ? @js(\App\Support\MediaTypeStyle::label('movie')) : @js(\App\Support\MediaTypeStyle::label('show'))"></span>
                     </li>
                 </template>
             </ul>
         </div>
-        <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-500 transition">
-            Search
-        </button>
+        <x-action-button variant="primary">Search</x-action-button>
     </form>
-</div>
+</x-card>
 
 @if ($errors->any())
     <div class="bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-sm rounded-lg px-4 py-3">

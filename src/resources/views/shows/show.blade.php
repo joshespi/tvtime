@@ -10,40 +10,25 @@
 
             <a href="{{ route('shows.index') }}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">&larr; My Shows</a>
 
-            <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4">
-                <x-show-poster :url="$show->posterUrl('w342')" :alt="$show->title" class="w-24 h-36" />
-                <div class="min-w-0">
-                    <p class="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-2">
-                        @if ($show->first_air_date)
-                            <span>{{ $show->first_air_date->format('Y') }}</span>
-                        @endif
-                        @if ($show->status)
-                            <span>&middot; {{ $show->status }}</span>
-                        @endif
-                        @if ($show->vote_average)
-                            <span>&middot; &#9733; {{ number_format($show->vote_average, 1) }}</span>
-                        @endif
-                    </p>
-                    @if (! empty($show->genres))
-                        <p class="text-xs text-gray-400 dark:text-gray-500 capitalize mt-1">{{ implode(', ', $show->genres) }}</p>
-                    @endif
-                    @if ($show->overview)
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{{ $show->overview }}</p>
-                    @endif
-                    <div class="mt-3 flex flex-wrap items-center gap-2">
-                        <x-tracking-status-select :user-show="$userShow" />
-                        <x-trailer-link :trailer-key="$show->trailer_key" />
-                        @unless ($userShow->status->isActive())
-                            <span class="text-xs text-gray-400 dark:text-gray-500">No dashboard entries, calendar dates or notifications.</span>
-                        @endunless
-                    </div>
-                </div>
-            </div>
+            <x-title-summary :poster-url="$show->posterUrl('w342')" :title="$show->title"
+                             :date="$show->first_air_date" :status="$show->status"
+                             :vote-average="$show->vote_average" :genres="$show->genres ?? []"
+                             :overview="$show->overview">
+                <x-tracking-status-select :user-show="$userShow" />
+                <x-trailer-link :trailer-key="$show->trailer_key" />
+                @unless ($userShow->status->isActive())
+                    <span class="text-xs text-gray-400 dark:text-gray-500">No dashboard entries, calendar dates or notifications.</span>
+                @endunless
+            </x-title-summary>
+
+            <x-card>
+                <x-rating-form :rating="$userShow->rating" :note="$userShow->note" :action="route('shows.update-rating', $userShow)" />
+            </x-card>
 
             <x-cast-list :cast="$show->cast ?? []" />
 
             @forelse ($seasons as $season => $episodes)
-                <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl">
+                <x-card padding="">
                     <div class="px-6 py-3 border-b border-gray-100 dark:border-gray-700">
                         <h3 class="font-semibold text-gray-900 dark:text-gray-100">Season {{ $season }}</h3>
                     </div>
@@ -77,7 +62,7 @@
                             </li>
                         @endforeach
                     </ul>
-                </div>
+                </x-card>
             @empty
                 <x-empty-state>No episode data yet for this show.</x-empty-state>
             @endforelse

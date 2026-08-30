@@ -3,6 +3,7 @@
 namespace App\Services\Catalog;
 
 use App\Models\User;
+use App\Support\TrackingStatus;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -38,16 +39,36 @@ class StatsService
             'episodesWatchedThisYear' => $episodeCounts['thisYear'],
             'moviesWatchedTotal' => $movieCounts['total'],
             'moviesWatchedThisYear' => $movieCounts['thisYear'],
-            'showStatusCounts' => $user->shows()->toBase()
-                ->selectRaw('status, count(*) as total')
-                ->groupBy('status')
-                ->pluck('total', 'status'),
+            'showStatusCounts' => $this->showStatusCounts($user),
             'topGenres' => $showGenres->concat($movieGenres)->countBy()->sortDesc()->take(5),
             'longestStreak' => $this->longestStreak(
                 $this->watchedDays($episodesWatched)->concat($this->watchedDays($moviesWatched))
             ),
             'memberSince' => $user->created_at,
         ];
+    }
+
+    /**
+     * How many tracked shows sit at each status, keyed by the status value.
+     *
+     * Walked over cases() rather than returned straight from the query so the
+     * rows come back in the enum's declared order rather than whatever the
+     * GROUP BY happened to emit. Statuses with no rows are dropped, so a user
+     * tracking nothing still gets an empty collection and the view's
+     * "Nothing tracked yet" branch.
+     *
+     * @return Collection<string, int>
+     */
+    private function showStatusCounts(User $user): Collection
+    {
+        $counts = $user->shows()->toBase()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        return collect(TrackingStatus::cases())
+            ->mapWithKeys(fn (TrackingStatus $status) => [$status->value => (int) ($counts[$status->value] ?? 0)])
+            ->filter(fn (int $count) => $count > 0);
     }
 
     /**

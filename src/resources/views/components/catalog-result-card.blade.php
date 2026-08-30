@@ -4,7 +4,7 @@
     $detailUrl = route('catalog.show', ['type' => $result['type'], 'tmdbId' => $result['id']]);
 @endphp
 
-<div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4">
+<x-card class="flex items-start gap-4">
     {{-- ?? null tolerates search results cached before poster_url moved into TmdbClient::mapResult(). --}}
     <x-show-poster :url="$result['poster_url'] ?? null" :alt="$result['title']" :href="$detailUrl" />
     <div class="min-w-0 flex-1 flex flex-col gap-2">
@@ -62,4 +62,4 @@
             </div>
         @endif
     </div>
-</div>
+</x-card>

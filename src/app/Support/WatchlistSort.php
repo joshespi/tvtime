@@ -12,11 +12,25 @@ use Illuminate\Support\Collection;
  */
 class WatchlistSort
 {
-    private const OPTIONS = ['added', 'release', 'title'];
+    /**
+     * Value ⇒ label. The select renders straight off this, so a new sort is one
+     * edit here rather than a value in this class and a label in the template —
+     * same reasoning as TrackingStatus::label() driving its own select.
+     */
+    private const OPTIONS = [
+        'added' => 'Recently added',
+        'release' => 'Release date',
+        'title' => 'Title (A–Z)',
+    ];
+
+    public static function options(): array
+    {
+        return self::OPTIONS;
+    }
 
     public static function resolve(?string $sort): string
     {
-        return in_array($sort, self::OPTIONS, true) ? $sort : 'added';
+        return $sort !== null && isset(self::OPTIONS[$sort]) ? $sort : 'added';
     }
 
     public static function apply(Collection $items, string $sort, Closure $dateAccessor, Closure $titleAccessor): Collection

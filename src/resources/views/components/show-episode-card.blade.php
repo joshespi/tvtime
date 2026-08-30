@@ -2,7 +2,7 @@
      (e.g. mark-watched) in the default slot. --}}
 @props(['show'])
 
-<div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4">
+<x-card class="flex items-start gap-4">
     <x-show-poster :url="$show->posterUrl()" :alt="$show->title" class="w-12 h-18" :href="route('shows.show', $show)" />
     <div class="min-w-0 flex-1 flex flex-col gap-2">
         <div class="min-w-0">
@@ -13,4 +13,4 @@
         </div>
         {{ $slot }}
     </div>
-</div>
+</x-card>

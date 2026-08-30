@@ -37,6 +37,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/shows', [ShowController::class, 'index'])->name('shows.index');
     Route::get('/shows/{show}', [ShowController::class, 'show'])->name('shows.show');
     Route::patch('/shows/{userShow}/status', [ShowController::class, 'updateStatus'])->name('shows.update-status');
+    Route::patch('/shows/{userShow}/rating', [ShowController::class, 'updateRating'])->name('shows.update-rating');
     Route::delete('/shows/{userShow}', [ShowController::class, 'destroy'])->name('shows.destroy');
 
     Route::post('/episodes/{episode}/toggle-watched', [WatchStatusController::class, 'toggle'])->name('episodes.toggle-watched');
@@ -45,10 +46,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/movies', [MovieController::class, 'index'])->name('movies.index');
     Route::post('/movies/{userMovie}/toggle-watched', [MovieController::class, 'toggleWatched'])->name('movies.toggle-watched');
     Route::post('/movies/{userMovie}/watch-again', [MovieController::class, 'watchAgain'])->name('movies.watch-again');
+    Route::patch('/movies/{userMovie}/rating', [MovieController::class, 'updateRating'])->name('movies.update-rating');
     Route::delete('/movies/{userMovie}', [MovieController::class, 'destroy'])->name('movies.destroy');
     Route::delete('/movie-watches/{movieWatch}', [MovieController::class, 'destroyWatch'])->name('movie-watches.destroy');
 
     Route::get('/history', HistoryController::class)->name('history.index');
+    Route::get('/history/export', [HistoryController::class, 'export'])->name('history.export');
 
     Route::get('/calendar', CalendarController::class)->name('calendar.index');
 

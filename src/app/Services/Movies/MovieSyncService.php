@@ -3,11 +3,13 @@
 namespace App\Services\Movies;
 
 use App\Models\Movie;
+use App\Services\Concerns\RefreshesCastAndTrailer;
 use App\Services\Shows\TmdbClient;
-use Illuminate\Support\Facades\Log;
 
 class MovieSyncService
 {
+    use RefreshesCastAndTrailer;
+
     public function __construct(private readonly TmdbClient $tmdb) {}
 
     public function store(string $externalId): Movie
@@ -63,21 +65,6 @@ class MovieSyncService
     /** Re-fetch cast/trailer for a movie that was tracked before those columns existed. */
     public function refreshCastAndTrailer(Movie $movie): void
     {
-        if (! $movie->tmdb_id) {
-            return;
-        }
-
-        $details = $this->tmdb->movie((string) $movie->tmdb_id);
-
-        if (! $details) {
-            Log::warning('Skipping cast/trailer backfill, TMDB fetch failed', ['movie_id' => $movie->id]);
-
-            return;
-        }
-
-        $movie->update([
-            'cast' => $details['cast'] ?? [],
-            'trailer_key' => $details['trailer_key'] ?? null,
-        ]);
+        $this->backfillCastAndTrailer($movie, fn (string $id) => $this->tmdb->movie($id));
     }
 }

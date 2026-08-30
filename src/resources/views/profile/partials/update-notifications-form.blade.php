@@ -20,8 +20,8 @@
         <template x-if="supported">
             <div class="flex items-center gap-4">
                 <button type="button" @click="toggle()" :disabled="loading"
-                        class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition disabled:opacity-50"
-                        :class="subscribed ? 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600' : 'bg-indigo-600 text-white hover:bg-indigo-500'">
+                        class="{{ \App\Support\ButtonStyle::BASE }} disabled:opacity-50"
+                        :class="subscribed ? @js(\App\Support\ButtonStyle::variant('secondary')) : @js(\App\Support\ButtonStyle::variant('primary'))">
                     <span x-show="!loading" x-text="subscribed ? 'Disable notifications' : 'Enable notifications'"></span>
                     <span x-show="loading">Working&hellip;</span>
                 </button>

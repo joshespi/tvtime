@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\SavesRatings;
 use App\Models\MovieWatch;
 use App\Models\UserMovie;
 use App\Services\Catalog\CatalogSearchService;
+use App\Support\GenreFilter;
 use App\Support\WatchlistSort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +15,8 @@ use Illuminate\View\View;
 
 class MovieController extends Controller
 {
+    use SavesRatings;
+
     public function __construct(private readonly CatalogSearchService $catalog) {}
 
     public function index(Request $request): View
@@ -22,6 +26,16 @@ class MovieController extends Controller
         // withCount so a re-queued movie can say it's been seen before without
         // loading every watch row behind it.
         $movies = $request->user()->movies()->with('movie')->withCount('watches')->get();
+
+        $genresOf = fn (UserMovie $userMovie) => $userMovie->movie->genres ?? [];
+
+        // Options are read off the full set, before filtering, so picking a
+        // genre never removes it from its own dropdown — and they're what the
+        // requested genre is validated against.
+        $genreOptions = GenreFilter::options($movies, $genresOf);
+        $genre = GenreFilter::resolve($request->string('genre')->toString(), $genreOptions);
+
+        $movies = GenreFilter::apply($movies, $genre, $genresOf);
 
         [$finished, $watchlist] = $movies->partition(fn (UserMovie $userMovie) => $userMovie->isFinished());
 
@@ -38,6 +52,8 @@ class MovieController extends Controller
             // control is about deciding what to watch next, which this isn't.
             'finished' => $finished->sortByDesc('watched_at')->values(),
             'sort' => $sort,
+            'genre' => $genre,
+            'genreOptions' => $genreOptions,
             ...$this->catalog->forRequest($request),
         ]);
     }
@@ -73,6 +89,11 @@ class MovieController extends Controller
         $userMovie->syncWatchedAt();
 
         return back();
+    }
+
+    public function updateRating(Request $request, UserMovie $userMovie): RedirectResponse
+    {
+        return $this->saveRating($request, $userMovie);
     }
 
     public function destroy(UserMovie $userMovie): RedirectResponse

@@ -67,4 +67,35 @@ class HistoryControllerTest extends TestCase
 
         $this->assertCount(0, $response->viewData('history'));
     }
+
+    public function test_guests_are_redirected_to_login_for_export(): void
+    {
+        $this->get('/history/export')->assertRedirect('/login');
+    }
+
+    public function test_export_streams_a_csv_of_the_users_watch_history(): void
+    {
+        $user = User::factory()->create();
+
+        $movie = Movie::factory()->create(['title' => 'Exported Movie']);
+        UserMovie::factory()->watched()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
+
+        $response = $this->actingAs($user)->get('/history/export');
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString('Exported Movie', $response->streamedContent());
+    }
+
+    public function test_export_is_scoped_to_the_authenticated_user(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $movie = Movie::factory()->create(['title' => 'Someone Elses Movie']);
+        UserMovie::factory()->watched()->create(['user_id' => $other->id, 'movie_id' => $movie->id]);
+
+        $response = $this->actingAs($user)->get('/history/export');
+
+        $this->assertStringNotContainsString('Someone Elses Movie', $response->streamedContent());
+    }
 }

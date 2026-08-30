@@ -57,7 +57,9 @@ class TmdbClientTest extends TestCase
             'genres' => ['Drama', 'Crime'],
             'first_air_date' => '2008-01-20',
             'cast' => [
-                ['name' => 'Bryan Cranston', 'character' => 'Walter White', 'profile_path' => '/cranston.jpg'],
+                // No person id in the credits above, so there's nothing to look
+                // an IMDB id up by — the member still maps, with imdb_id null.
+                ['name' => 'Bryan Cranston', 'character' => 'Walter White', 'profile_path' => '/cranston.jpg', 'imdb_id' => null],
             ],
             'trailer_key' => 'abc123',
         ], $show);
@@ -151,10 +153,37 @@ class TmdbClientTest extends TestCase
             'genres' => ['Action'],
             'release_date' => '1999-03-31',
             'cast' => [
-                ['name' => 'Keanu Reeves', 'character' => 'Neo', 'profile_path' => '/reeves.jpg'],
+                ['name' => 'Keanu Reeves', 'character' => 'Neo', 'profile_path' => '/reeves.jpg', 'imdb_id' => null],
             ],
             'trailer_key' => 'xyz789',
         ], $movie);
+    }
+
+    public function test_cast_members_with_a_person_id_get_their_imdb_id_resolved(): void
+    {
+        Http::fake([
+            'api.themoviedb.org/3/person/288/external_ids*' => Http::response(['imdb_id' => 'nm0000288']),
+            // Not every TMDB person has an IMDB id; an empty one maps to null
+            // rather than the empty string.
+            'api.themoviedb.org/3/person/999/external_ids*' => Http::response(['imdb_id' => '']),
+            'api.themoviedb.org/3/movie/603*' => Http::response([
+                'id' => 603,
+                'title' => 'The Matrix',
+                'overview' => 'A hacker...',
+                'release_date' => '1999-03-31',
+                'credits' => [
+                    'cast' => [
+                        ['id' => 288, 'name' => 'Keanu Reeves', 'character' => 'Neo', 'profile_path' => '/reeves.jpg'],
+                        ['id' => 999, 'name' => 'Extra', 'character' => 'Extra', 'profile_path' => null],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $cast = $this->client->movie('603')['cast'];
+
+        $this->assertSame('nm0000288', $cast[0]['imdb_id']);
+        $this->assertNull($cast[1]['imdb_id']);
     }
 
     public function test_map_trailer_prefers_official_trailer_over_others(): void

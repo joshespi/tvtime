@@ -6,16 +6,16 @@
     <div class="py-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
-            <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-6">
+            <x-card padding="px-6 py-6">
                 <p class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
                     This app is free and open to self-host. No ads, no analytics, no third-party connections —
                     your data stays on whatever server runs it and goes nowhere else. If it's saved you the
                     hassle of TV Time, consider tipping. No pressure at all.
                 </p>
-            </div>
+            </x-card>
 
             @if ($btcAddress)
-            <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-6">
+            <x-card padding="px-6 py-6">
                 <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">Bitcoin</h3>
                 <div class="flex flex-col sm:flex-row items-start gap-6">
                     <div class="shrink-0 bg-white p-2 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -36,9 +36,9 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </x-card>
             @endif
-            <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-6">
+            <x-card padding="px-6 py-6">
                 <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">GitHub Sponsors</h3>
                 <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
                     Sponsor on GitHub for recurring support. GitHub matches contributions for the first year.
@@ -50,7 +50,7 @@
                     </svg>
                     Sponsor on GitHub
                 </a>
-            </div>
+            </x-card>
 
             <p class="text-xs text-center text-gray-400 dark:text-gray-500">
                 The app will always be free. Donations just keep the server lights on and the motivation up.

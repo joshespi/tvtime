@@ -47,19 +47,11 @@ class TmdbClient
     /** @param  array<int, string>  $append  Which DETAIL_APPEND-style sections to request; pass [] to skip them. */
     public function show(string $id, array $append = self::DETAIL_APPEND): ?array
     {
-        try {
-            $response = $this->request()->get("/tv/{$id}", $this->params($append));
-        } catch (ConnectionException $e) {
-            Log::warning('TMDB show lookup failed to connect', ['id' => $id, 'message' => $e->getMessage()]);
+        $data = $this->detail("/tv/{$id}", $append, 'show');
 
+        if ($data === null) {
             return null;
         }
-
-        if ($response->failed()) {
-            return null;
-        }
-
-        $data = $response->json();
 
         return [
             'id' => (string) $data['id'],
@@ -178,19 +170,11 @@ class TmdbClient
     /** @param  array<int, string>  $append  See show()'s docblock — same rationale applies to movies. */
     public function movie(string $id, array $append = self::DETAIL_APPEND): ?array
     {
-        try {
-            $response = $this->request()->get("/movie/{$id}", $this->params($append));
-        } catch (ConnectionException $e) {
-            Log::warning('TMDB movie lookup failed to connect', ['id' => $id, 'message' => $e->getMessage()]);
+        $data = $this->detail("/movie/{$id}", $append, 'movie');
 
+        if ($data === null) {
             return null;
         }
-
-        if ($response->failed()) {
-            return null;
-        }
-
-        $data = $response->json();
 
         return [
             'id' => (string) $data['id'],
@@ -203,6 +187,28 @@ class TmdbClient
             'release_date' => $data['release_date'] ?: null,
             ...$this->mapExtras($data),
         ];
+    }
+
+    /**
+     * The raw payload for one detail endpoint. show() and movie() differ only in
+     * the path they hit and the shape they map the result into, so the fetch —
+     * timeouts, connection failure, non-2xx — lives here once rather than being
+     * restated per title type.
+     *
+     * @param  array<int, string>  $append
+     * @param  string  $type  Only used to label the log line.
+     */
+    private function detail(string $path, array $append, string $type): ?array
+    {
+        try {
+            $response = $this->request()->get($path, $this->params($append));
+        } catch (ConnectionException $e) {
+            Log::warning("TMDB {$type} lookup failed to connect", ['path' => $path, 'message' => $e->getMessage()]);
+
+            return null;
+        }
+
+        return $response->failed() ? null : $response->json();
     }
 
     /**
@@ -251,12 +257,20 @@ class TmdbClient
      * DETAIL_APPEND fetch (first track, an on-demand catalog preview, or the
      * cast/trailer backfill command), never the daily refresh jobs.
      *
-     * @param  array<int, int>  $personIds
-     * @return array<int, ?string> Same order as $personIds; null on a failed lookup.
+     * A credits entry can arrive without a person id; there's nothing to look up
+     * for one, but it still occupies its slot in the returned list so the result
+     * stays aligned with the cast mapCast() built it from.
+     *
+     * @param  array<int, ?int>  $personIds
+     * @return array<int, ?string> Same order and length as $personIds; null on a missing id or failed lookup.
      */
     private function fetchImdbIds(array $personIds): array
     {
-        $toFetch = collect($personIds)->unique()->reject(fn (int $id) => array_key_exists($id, $this->imdbIdCache))->values();
+        $toFetch = collect($personIds)
+            ->filter(fn (?int $id) => $id !== null)
+            ->unique()
+            ->reject(fn (int $id) => array_key_exists($id, $this->imdbIdCache))
+            ->values();
 
         if ($toFetch->isNotEmpty()) {
             $responses = Http::pool(fn ($pool) => $toFetch
@@ -272,13 +286,21 @@ class TmdbClient
             }
         }
 
-        return collect($personIds)->map(fn (int $id) => $this->imdbIdCache[$id] ?? null)->all();
+        return collect($personIds)
+            ->map(fn (?int $id) => $id === null ? null : ($this->imdbIdCache[$id] ?? null))
+            ->all();
     }
 
-    /** Shared connection config for a pooled request — same timeouts as request(), applied to a pool member instead of a standalone client. */
-    private function pooledClient(Pool $pool): PendingRequest
+    /**
+     * Shared connection config for a pooled request — same timeouts as request(),
+     * applied to a pool member instead of a standalone client. Pass $key to name
+     * the response (Pool::as); omit it for a positionally-indexed one.
+     */
+    private function pooledClient(Pool $pool, int|string|null $key = null): PendingRequest
     {
-        return $pool->baseUrl($this->baseUrl)->acceptJson()->connectTimeout(2)->timeout(5);
+        $request = $key === null ? $pool->newRequest() : $pool->as((string) $key);
+
+        return $request->baseUrl($this->baseUrl)->acceptJson()->connectTimeout(2)->timeout(5);
     }
 
     /**
@@ -324,9 +346,7 @@ class TmdbClient
         // for every tracked show in the daily refresh job.
         $seasons = range(1, $numberOfSeasons);
         $responses = Http::pool(fn ($pool) => collect($seasons)
-            ->map(fn (int $season) => $pool->as($season)
-                ->baseUrl($this->baseUrl)
-                ->acceptJson()
+            ->map(fn (int $season) => $this->pooledClient($pool, $season)
                 ->get("/tv/{$id}/season/{$season}", ['api_key' => $this->key]))
             ->all());
 

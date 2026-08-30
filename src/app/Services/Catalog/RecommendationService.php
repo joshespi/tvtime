@@ -117,25 +117,36 @@ class RecommendationService
      */
     private function fetch(array $seeds): array
     {
+        // One read and one write for the whole batch rather than per seed: the
+        // cache store here is the database, so each Cache::get would otherwise
+        // be its own round trip on the dashboard's render path.
+        $keys = array_map(fn (array $seed) => $this->cacheKey($seed), $seeds);
+        $cached = Cache::many($keys);
+
         $results = [];
         $misses = [];
 
-        foreach ($seeds as $seed) {
-            $cached = Cache::get($this->cacheKey($seed));
+        foreach ($seeds as $index => $seed) {
+            $hit = $cached[$keys[$index]] ?? null;
 
-            if ($cached === null) {
+            if ($hit === null) {
                 $misses[] = $seed;
 
                 continue;
             }
 
-            $results[] = $cached;
+            $results[] = $hit;
         }
 
-        foreach ($this->tmdb->recommendations($misses) as $index => $fetched) {
-            Cache::put($this->cacheKey($misses[$index]), $fetched, now()->addMinutes(self::CACHE_TTL_MINUTES));
+        $fetched = $this->tmdb->recommendations($misses);
 
-            $results[] = $fetched;
+        if ($fetched !== []) {
+            Cache::putMany(
+                collect($fetched)->mapWithKeys(fn (array $result, int $index) => [$this->cacheKey($misses[$index]) => $result])->all(),
+                now()->addMinutes(self::CACHE_TTL_MINUTES),
+            );
+
+            $results = array_merge($results, $fetched);
         }
 
         return array_merge(...$results ?: [[]]);

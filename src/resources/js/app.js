@@ -114,8 +114,10 @@ Alpine.data('trackButton', (storeUrl, type, externalId) => ({
                 return;
             }
 
+            // No success message: the button's own "✓ Tracking" state says it,
+            // and `message` is only ever rendered on the error branch.
             this.status = 'done';
-            this.message = data.message;
+            this.$dispatch('tracked');
         } catch (error) {
             this.status = 'error';
             this.message = 'Something went wrong.';

@@ -1,6 +1,6 @@
 @props(['userShow'])
 
-{{-- Auto-submitting GET-style select, same pattern as <x-sort-select>: no JS
+{{-- Auto-submitting GET-style select, same pattern as <x-query-select>: no JS
      dependency, and no separate "save" button to hunt for. --}}
 <form method="POST" action="{{ route('shows.update-status', $userShow) }}" class="inline-flex">
     @csrf

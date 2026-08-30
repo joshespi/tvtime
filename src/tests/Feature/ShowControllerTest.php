@@ -159,6 +159,85 @@ class ShowControllerTest extends TestCase
         $this->assertSame(TrackingStatus::Watching, $userShow->fresh()->status);
     }
 
+    public function test_index_filters_by_genre(): void
+    {
+        $user = User::factory()->create();
+        $comedy = Show::factory()->create(['title' => 'Comedy Show', 'genres' => ['Comedy']]);
+        $drama = Show::factory()->create(['title' => 'Drama Show', 'genres' => ['Drama']]);
+
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $comedy->id]);
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $drama->id]);
+
+        $response = $this->actingAs($user)->get('/shows?genre=Comedy');
+
+        $response->assertOk();
+        $this->assertSame(['Comedy Show'], $response->viewData('tracked')->pluck('show.title')->all());
+    }
+
+    public function test_index_ignores_a_genre_no_tracked_show_carries(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create(['title' => 'Comedy Show', 'genres' => ['Comedy']]);
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+
+        // A stale ?genre= (its last show was untracked) would otherwise filter the
+        // list to nothing while the select fell back to showing "All genres".
+        $response = $this->actingAs($user)->get('/shows?genre=Horror');
+
+        $response->assertOk();
+        $this->assertNull($response->viewData('genre'));
+        $this->assertSame(['Comedy Show'], $response->viewData('tracked')->pluck('show.title')->all());
+    }
+
+    public function test_update_rating_sets_a_rating_and_note(): void
+    {
+        $user = User::factory()->create();
+        $userShow = UserShow::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)
+            ->from(route('shows.index'))
+            ->patch("/shows/{$userShow->id}/rating", ['rating' => 8, 'note' => 'Great season.']);
+
+        $response->assertRedirect();
+        $this->assertSame(8, $userShow->fresh()->rating);
+        $this->assertSame('Great season.', $userShow->fresh()->note);
+    }
+
+    public function test_update_rating_clears_a_rating(): void
+    {
+        $user = User::factory()->create();
+        $userShow = UserShow::factory()->create(['user_id' => $user->id, 'rating' => 5, 'note' => 'Meh.']);
+
+        $this->actingAs($user)->patch("/shows/{$userShow->id}/rating", []);
+
+        $this->assertNull($userShow->fresh()->rating);
+        $this->assertNull($userShow->fresh()->note);
+    }
+
+    public function test_update_rating_rejects_an_out_of_range_rating(): void
+    {
+        $user = User::factory()->create();
+        $userShow = UserShow::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->patch("/shows/{$userShow->id}/rating", ['rating' => 11])
+            ->assertSessionHasErrors('rating');
+
+        $this->assertNull($userShow->fresh()->rating);
+    }
+
+    public function test_update_rating_forbids_changing_another_users_show(): void
+    {
+        $user = User::factory()->create();
+        $userShow = UserShow::factory()->create();
+
+        $this->actingAs($user)
+            ->patch("/shows/{$userShow->id}/rating", ['rating' => 9])
+            ->assertForbidden();
+
+        $this->assertNull($userShow->fresh()->rating);
+    }
+
     public function test_destroy_removes_the_users_tracked_show(): void
     {
         $user = User::factory()->create();

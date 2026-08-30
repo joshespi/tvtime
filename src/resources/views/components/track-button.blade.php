@@ -1,12 +1,12 @@
-@props(['type', 'tmdbId', 'label' => null, 'doneLabel' => null, 'variant' => 'secondary'])
+@props(['type', 'tmdbId', 'variant' => 'secondary'])
 
 {{-- The one place that knows how to render "add this TMDB title to my list" —
      search results, recommendations, and the catalog detail pages all track a
      title the same way, so they all render this instead of re-declaring the
      Alpine wiring and button states themselves. --}}
 @php
-    $label ??= $type === 'movie' ? 'Add to watchlist' : 'Track';
-    $doneLabel ??= $type === 'movie' ? 'Added' : 'Tracking';
+    $label = $type === 'movie' ? 'Add to watchlist' : 'Track';
+    $doneLabel = $type === 'movie' ? 'Added' : 'Tracking';
 @endphp
 
 <div x-data="trackButton(@js(route('search.store')), @js($type), @js($tmdbId))">

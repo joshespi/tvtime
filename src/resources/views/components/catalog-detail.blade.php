@@ -1,8 +1,9 @@
-@props(['type', 'details', 'tmdbId'])
+@props(['type', 'details'])
 
 {{-- Shared shell for the "see more details" page reached from search results
      and recommendations — show.blade.php and movie.blade.php differ only in
-     which TMDB date field they carry and what the action slot renders. --}}
+     which TMDB date field they carry and what the action slot renders. The
+     header itself is <x-title-summary>, shared with the tracked-show page. --}}
 @php
     $date = $details['first_air_date'] ?? $details['release_date'] ?? null;
 @endphp
@@ -22,33 +23,15 @@
 
             <a href="{{ url()->previous() }}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">&larr; Back</a>
 
-            <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl px-6 py-4 flex items-start gap-4">
-                <x-show-poster :url="\App\Support\TmdbImage::url($details['poster_path'], 'w342')" :alt="$details['title']" class="w-24 h-36" />
-                <div class="min-w-0">
-                    <p class="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-2">
-                        @if ($date)
-                            <span>{{ \Illuminate\Support\Carbon::parse($date)->format('Y') }}</span>
-                        @endif
-                        @if ($details['status'])
-                            <span>&middot; {{ $details['status'] }}</span>
-                        @endif
-                        @if ($details['vote_average'])
-                            <span>&middot; &#9733; {{ number_format($details['vote_average'], 1) }}</span>
-                        @endif
-                    </p>
-                    @if (! empty($details['genres']))
-                        <p class="text-xs text-gray-400 dark:text-gray-500 capitalize mt-1">{{ implode(', ', $details['genres']) }}</p>
-                    @endif
-                    @if ($details['overview'])
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{{ $details['overview'] }}</p>
-                    @endif
+            <x-title-summary :poster-url="\App\Support\TmdbImage::url($details['poster_path'], 'w342')"
+                             :title="$details['title']" :date="$date" :status="$details['status']"
+                             :vote-average="$details['vote_average']" :genres="$details['genres']"
+                             :overview="$details['overview']">
+                {{ $slot }}
+                <x-trailer-link :trailer-key="$details['trailer_key'] ?? null" />
+            </x-title-summary>
 
-                    <div class="mt-3 flex flex-wrap items-center gap-2">
-                        {{ $slot }}
-                        <x-trailer-link :trailer-key="$details['trailer_key'] ?? null" />
-                    </div>
-                </div>
-            </div>
+            {{ $after ?? '' }}
 
             <x-cast-list :cast="$details['cast'] ?? []" />
 

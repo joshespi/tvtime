@@ -151,6 +151,70 @@ class MovieControllerTest extends TestCase
         $this->actingAs($user)->post("/movies/{$userMovie->id}/toggle-watched")->assertForbidden();
     }
 
+    public function test_index_filters_by_genre(): void
+    {
+        $user = User::factory()->create();
+        $action = Movie::factory()->create(['title' => 'Action Movie', 'genres' => ['Action']]);
+        $comedy = Movie::factory()->create(['title' => 'Comedy Movie', 'genres' => ['Comedy']]);
+
+        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $action->id]);
+        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $comedy->id]);
+
+        $response = $this->actingAs($user)->get('/movies?genre=Comedy');
+
+        $response->assertOk();
+        $this->assertSame(['Comedy Movie'], $response->viewData('watchlist')->pluck('movie.title')->all());
+    }
+
+    public function test_update_rating_sets_a_rating_and_note(): void
+    {
+        $user = User::factory()->create();
+        $userMovie = UserMovie::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user)
+            ->from(route('movies.index'))
+            ->patch("/movies/{$userMovie->id}/rating", ['rating' => 7, 'note' => 'Rewatch material.']);
+
+        $response->assertRedirect();
+        $this->assertSame(7, $userMovie->fresh()->rating);
+        $this->assertSame('Rewatch material.', $userMovie->fresh()->note);
+    }
+
+    public function test_update_rating_clears_a_rating(): void
+    {
+        $user = User::factory()->create();
+        $userMovie = UserMovie::factory()->create(['user_id' => $user->id, 'rating' => 3, 'note' => 'Skip.']);
+
+        $this->actingAs($user)->patch("/movies/{$userMovie->id}/rating", []);
+
+        $this->assertNull($userMovie->fresh()->rating);
+        $this->assertNull($userMovie->fresh()->note);
+    }
+
+    public function test_update_rating_rejects_an_out_of_range_rating(): void
+    {
+        $user = User::factory()->create();
+        $userMovie = UserMovie::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->patch("/movies/{$userMovie->id}/rating", ['rating' => 0])
+            ->assertSessionHasErrors('rating');
+
+        $this->assertNull($userMovie->fresh()->rating);
+    }
+
+    public function test_update_rating_forbids_changing_another_users_movie(): void
+    {
+        $user = User::factory()->create();
+        $userMovie = UserMovie::factory()->create();
+
+        $this->actingAs($user)
+            ->patch("/movies/{$userMovie->id}/rating", ['rating' => 9])
+            ->assertForbidden();
+
+        $this->assertNull($userMovie->fresh()->rating);
+    }
+
     public function test_destroy_removes_the_users_watchlist_entry(): void
     {
         $user = User::factory()->create();
