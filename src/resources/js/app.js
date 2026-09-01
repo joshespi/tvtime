@@ -227,4 +227,14 @@ Alpine.data('pushNotifications', (vapidPublicKey, subscribeUrl, unsubscribeUrl) 
     },
 }));
 
+// Installed on iOS (standalone display mode) via "Add to Home Screen", tapping a
+// target="_blank" link crashes the whole app back to the home screen — standalone
+// mode has no browser chrome to open a new tab/window into. Strip the target so
+// these links navigate in-place instead, which works fine there.
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+if (isStandalone) {
+    document.querySelectorAll('a[target="_blank"]').forEach((link) => link.removeAttribute('target'));
+}
+
 Alpine.start();
