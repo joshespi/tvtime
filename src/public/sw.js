@@ -1,8 +1,14 @@
-// A fetch handler is the one thing Chrome requires for installability, so
-// this exists to earn the install prompt. It deliberately does no caching
-// (network passthrough only) so it can't serve a stale session-guarded page,
-// stale CSRF token, or stale build asset. Offline support is a future
-// enhancement, not attempted here.
+// No fetch handler here on purpose. Chrome hasn't required one for installability
+// for years now (a valid manifest + a registered SW with install/activate is
+// enough) — so we don't register one at all. On Android, an installed PWA's
+// service worker gets fully terminated after ~30s of inactivity, and having a
+// fetch handler means the *next* navigation (any link click) has to wake that
+// terminated worker back up to run it. That wake-on-navigate path is a known
+// crash trigger specifically in the WebAPK/standalone host (not a normal Chrome
+// tab, which recovers from it fine) — matches the exact bug seen here: works all
+// session, breaks the first click after the app sits closed long enough for the
+// worker to go idle. This worker does no caching anyway, so intercepting fetch
+// bought nothing.
 
 self.addEventListener('install', () => {
     self.skipWaiting();
@@ -10,21 +16,6 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(self.clients.claim());
-});
-
-self.addEventListener('fetch', (event) => {
-    // Navigations (i.e. clicking a link) are deliberately left alone rather than
-    // re-fetched via event.request — re-fetching a navigation whose response is a
-    // redirect (Laravel's auth/session redirects, etc.) can hand the browser a
-    // response it can't use to satisfy that navigation. In a normal tab that just
-    // shows a failed-navigation error page, but an installed Android PWA has no
-    // chrome to fall back into and force-closes instead. Since this worker does no
-    // caching anyway, there's nothing gained by intercepting navigations at all.
-    if (event.request.mode === 'navigate') {
-        return;
-    }
-
-    event.respondWith(fetch(event.request));
 });
 
 // Payload shape comes from NotificationChannels\WebPush\WebPushMessage::toArray()
