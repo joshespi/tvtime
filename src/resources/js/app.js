@@ -237,4 +237,40 @@ if (isStandalone) {
     document.querySelectorAll('a[target="_blank"]').forEach((link) => link.removeAttribute('target'));
 }
 
+// Diagnostic for the installed-app force-close bug: there's no console access on
+// the device, so beacon any uncaught error/rejection to the server instead.
+// sendBeacon (not fetch) because it's designed to still deliver even if the page
+// is mid-navigation or being torn down — exactly the moment this needs to catch.
+function reportClientError(payload) {
+    try {
+        navigator.sendBeacon(
+            '/client-errors',
+            new Blob([JSON.stringify({ ...payload, url: location.href, standalone: isStandalone })], {
+                type: 'application/json',
+            })
+        );
+    } catch (e) {
+        // sendBeacon itself is best-effort; nothing more we can do if it throws.
+    }
+}
+
+window.addEventListener('error', (event) => {
+    reportClientError({
+        type: 'error',
+        message: event.message,
+        source: event.filename,
+        line: event.lineno,
+        column: event.colno,
+        stack: event.error?.stack,
+    });
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    reportClientError({
+        type: 'unhandledrejection',
+        message: event.reason?.message || String(event.reason),
+        stack: event.reason?.stack,
+    });
+});
+
 Alpine.start();

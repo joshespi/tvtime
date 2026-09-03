@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\ClientErrorController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\ProfileController;
@@ -21,6 +22,8 @@ Route::get('/', function () {
 Route::get('/manifest.webmanifest', function () {
     return response()->view('manifest')->header('Content-Type', 'application/manifest+json');
 })->name('manifest');
+
+Route::post('/client-errors', [ClientErrorController::class, 'store'])->name('client-errors.store');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', UpNextController::class)->name('dashboard');

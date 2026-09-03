@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: env('TRUSTED_PROXIES', ''));
+
+        // navigator.sendBeacon() can't attach the CSRF header, and the crash
+        // this exists to diagnose may itself be tied to a stale/expired
+        // session — the beacon needs to land either way.
+        $middleware->validateCsrfTokens(except: ['client-errors']);
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('app:check-new-episodes')->daily();
