@@ -19,7 +19,7 @@
                     @endif
                     <p class="text-xs font-medium text-gray-900 dark:text-gray-100 mt-1 truncate" title="{{ $member['name'] }}">
                         @if ($imdbUrl = \App\Support\ImdbLink::personUrl($member['imdb_id'] ?? null))
-                            <a href="{{ $imdbUrl }}" target="_blank" rel="noopener noreferrer" class="hover:underline">{{ $member['name'] }}</a>
+                            <a href="{{ $imdbUrl }}" rel="noopener noreferrer" class="hover:underline">{{ $member['name'] }}</a>
                         @else
                             {{ $member['name'] }}
                         @endif

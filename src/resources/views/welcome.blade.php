@@ -103,7 +103,7 @@
                         <h3 class="mt-4 font-semibold">Open source &amp; ad-free</h3>
                         <p class="mt-1.5 text-sm text-gray-600 dark:text-gray-400">
                             No ads, no analytics, no third parties. Prefer to run your own copy?
-                            <a href="https://github.com/joshespi/tvtime" target="_blank" rel="noopener" class="text-indigo-600 dark:text-indigo-400 hover:underline">The code is on GitHub</a>.
+                            <a href="https://github.com/joshespi/tvtime" rel="noopener" class="text-indigo-600 dark:text-indigo-400 hover:underline">The code is on GitHub</a>.
                         </p>
                     </div>
                 </div>
@@ -113,7 +113,7 @@
         <footer class="border-t border-gray-200 dark:border-gray-800">
             <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
                 {{ config('app.name', 'TV Tracker') }} &middot;
-                <a href="https://github.com/joshespi/tvtime" target="_blank" rel="noopener" class="hover:underline">open source</a>
+                <a href="https://github.com/joshespi/tvtime" rel="noopener" class="hover:underline">open source</a>
             </div>
         </footer>
 

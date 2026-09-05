@@ -227,15 +227,55 @@ Alpine.data('pushNotifications', (vapidPublicKey, subscribeUrl, unsubscribeUrl) 
     },
 }));
 
-// Installed on iOS (standalone display mode) via "Add to Home Screen", tapping a
-// target="_blank" link crashes the whole app back to the home screen — standalone
-// mode has no browser chrome to open a new tab/window into. Strip the target so
-// these links navigate in-place instead, which works fine there.
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+// External links deliberately carry no target in the markup. An installed app
+// window has nowhere to put a new tab, and asking for one takes the app down
+// with it: Chrome's Android WebAPK finishes the activity (you land back on the
+// home screen, task still sitting in recents), iOS standalone does the same,
+// Firefox prompts. So only a real browser tab gets target="_blank", and the
+// decision is made at click time rather than on load, which also covers links
+// Alpine renders later.
+//
+// Note the polarity. The previous version of this did the reverse — strip the
+// target when standalone is *detected* — and it never once fired, because the
+// installed app doesn't report `display-mode: standalone` here. Deciding it this
+// way round means a browser that misreports its display mode falls through to
+// navigating in place (slightly worse UX) instead of to the variant that closes
+// the app.
+function inBrowserTab() {
+    const installedModes = ['standalone', 'minimal-ui', 'fullscreen', 'window-controls-overlay'];
 
-if (isStandalone) {
-    document.querySelectorAll('a[target="_blank"]').forEach((link) => link.removeAttribute('target'));
+    // Require a positive match on an installed mode rather than a positive match on
+    // "browser" — a browser that doesn't report display-mode at all (or misreports
+    // it) then defaults to opening a new tab, which is the safe failure: worst case
+    // a real installed app misses the fix, instead of every normal browser losing
+    // target="_blank" on external links.
+    const isInstalled = installedModes.some((mode) => window.matchMedia(`(display-mode: ${mode})`).matches)
+        || window.navigator.standalone === true;
+
+    return ! isInstalled;
 }
+
+// Reported alongside client errors: the whole reason the old fix missed was not
+// knowing what the installed app actually reports here, so record it rather than
+// assume it again.
+function displayMode() {
+    return ['browser', 'minimal-ui', 'standalone', 'fullscreen', 'window-controls-overlay']
+        .find((mode) => window.matchMedia(`(display-mode: ${mode})`).matches) ?? 'unknown';
+}
+
+document.addEventListener('click', (event) => {
+    const link = event.target.closest?.('a[href]');
+
+    if (! link || ! link.hostname || link.hostname === location.hostname) {
+        return;
+    }
+
+    if (inBrowserTab()) {
+        link.target = '_blank';
+    } else {
+        link.removeAttribute('target');
+    }
+}, true);
 
 // Diagnostic for the installed-app force-close bug: there's no console access on
 // the device, so beacon any uncaught error/rejection to the server instead.
@@ -245,7 +285,7 @@ function reportClientError(payload) {
     try {
         navigator.sendBeacon(
             '/client-errors',
-            new Blob([JSON.stringify({ ...payload, url: location.href, standalone: isStandalone })], {
+            new Blob([JSON.stringify({ ...payload, url: location.href, display_mode: displayMode() })], {
                 type: 'application/json',
             })
         );

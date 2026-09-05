@@ -22,7 +22,7 @@ class ClientErrorController extends Controller
             'column' => ['nullable', 'integer'],
             'stack' => ['nullable', 'string', 'max:4000'],
             'url' => ['nullable', 'string', 'max:500'],
-            'standalone' => ['nullable', 'boolean'],
+            'display_mode' => ['nullable', 'string', 'max:50'],
         ]);
 
         Log::channel('single')->warning('client-error', $validated + [
