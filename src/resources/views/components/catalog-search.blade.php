@@ -1,6 +1,6 @@
 @props(['query' => '', 'results' => [], 'action', 'suggestUrl'])
 
-<x-card x-data="catalogSearch(@js($suggestUrl))">
+<x-card x-data="catalogSearch({{ \Illuminate\Support\Js::from($suggestUrl) }})">
     <form method="GET" action="{{ $action }}" class="flex gap-2" x-ref="form" @submit="open = false">
         <div class="relative flex-1">
             <input type="text" name="q" value="{{ $query }}" x-ref="input" x-model="query"
