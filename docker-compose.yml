@@ -109,7 +109,11 @@ services:
           echo "[queue] waiting for app migration to finish..."
           sleep 2
         done
-        exec php artisan queue:work --sleep=3 --tries=3
+        # --max-time bounds how long one worker process runs before Laravel
+        # restarts it — without it, a worker started before a code deploy (this
+        # volume is a live bind mount of ./src) keeps serving the old code
+        # indefinitely instead of picking up the new build on its next job.
+        exec php artisan queue:work --sleep=3 --tries=3 --max-time=3600
 
   node:
     image: node:24.18-alpine
