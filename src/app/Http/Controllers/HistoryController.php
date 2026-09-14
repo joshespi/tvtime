@@ -49,14 +49,24 @@ class HistoryController extends Controller
             foreach ($history as $entry) {
                 fputcsv($out, [
                     ucfirst($entry['type']),
-                    $entry['title'],
-                    $entry['subtitle'],
+                    $this->csvSafe($entry['title']),
+                    $this->csvSafe($entry['subtitle']),
                     $entry['watched_at']->format('Y-m-d H:i:s'),
                 ], escape: '');
             }
 
             fclose($out);
         }, 'watch-history-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    /**
+     * Titles/subtitles come from TMDB, not the user, but a title that happens to
+     * start with =/+/-/@ is a valid formula prefix in Excel/Sheets — prefixing it
+     * with a tab defuses that without visibly changing how the cell reads.
+     */
+    private function csvSafe(?string $value): ?string
+    {
+        return $value !== null && preg_match('/^[=+\-@]/', $value) ? "\t{$value}" : $value;
     }
 
     /**
