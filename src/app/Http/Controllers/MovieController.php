@@ -10,6 +10,7 @@ use App\Support\GenreFilter;
 use App\Support\WatchlistSort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -82,11 +83,16 @@ class MovieController extends Controller
     {
         Gate::authorize('delete', $movieWatch);
 
-        $userMovie = $movieWatch->userMovie;
+        // Transactional so a failure between the delete and the resync can't
+        // leave the movie's watched_at flag pointing at a viewing that no
+        // longer exists.
+        DB::transaction(function () use ($movieWatch) {
+            $userMovie = $movieWatch->userMovie;
 
-        $movieWatch->delete();
+            $movieWatch->delete();
 
-        $userMovie->syncWatchedAt();
+            $userMovie->syncWatchedAt();
+        });
 
         return back();
     }

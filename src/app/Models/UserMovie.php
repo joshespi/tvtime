@@ -9,13 +9,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class UserMovie extends Model
 {
     /** @use HasFactory<UserMovieFactory> */
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $fillable = ['user_id', 'movie_id', 'watched_at', 'rating', 'note'];
 
     protected function casts(): array
     {
@@ -83,9 +84,15 @@ class UserMovie extends Model
     {
         $watchedAt = now();
 
-        $this->watches()->create(['watched_at' => $watchedAt]);
+        // Transactional so a failure between the two writes can't leave a
+        // MovieWatch row on record while the movie itself still reads as
+        // unwatched (or vice versa) — syncWatchedAt() elsewhere trusts that
+        // watches() and watched_at never drift apart.
+        DB::transaction(function () use ($watchedAt) {
+            $this->watches()->create(['watched_at' => $watchedAt]);
 
-        $this->update(['watched_at' => $watchedAt]);
+            $this->update(['watched_at' => $watchedAt]);
+        });
     }
 
     /**
@@ -94,10 +101,12 @@ class UserMovie extends Model
      */
     public function markUnwatched(): void
     {
-        // watches() is already newest-first, so this is the most recent one.
-        $this->watches()->first()?->delete();
+        DB::transaction(function () {
+            // watches() is already newest-first, so this is the most recent one.
+            $this->watches()->first()?->delete();
 
-        $this->syncWatchedAt();
+            $this->syncWatchedAt();
+        });
     }
 
     /**
