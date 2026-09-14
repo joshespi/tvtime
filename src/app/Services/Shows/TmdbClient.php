@@ -16,6 +16,14 @@ class TmdbClient
     private const CAST_LIMIT = 10;
 
     /**
+     * Ceiling on how many seasons episodes() will fan out to in one Http::pool()
+     * call. number_of_seasons comes straight from TMDB, so this is a defensive
+     * cap rather than a real-world limit — the longest current shows (soaps,
+     * long-running late-night) top out well under this.
+     */
+    private const MAX_SEASONS_PER_FETCH = 75;
+
+    /**
      * TMDB `append_to_response` sections a full show/movie detail fetch pulls in
      * beyond the base payload. Cast/trailer data barely changes once a title's
      * released, so the daily refresh jobs (which already re-fetch show()/movie()
@@ -99,10 +107,14 @@ class TmdbClient
      * Recommendations for several seed titles at once. This runs inline while the
      * dashboard renders, so the seeds go out concurrently rather than one after
      * another. Recommendations are a nice-to-have, so a seed that fails degrades
-     * to an empty list instead of failing the page.
+     * to nothing instead of failing the page — but a failure comes back as null,
+     * not an empty list, so RecommendationService can tell "TMDB errored" apart
+     * from "TMDB said there's nothing" and skip caching the former. Caching a
+     * failure the same as a real empty result would silently blank out that
+     * seed's recommendations for the full 12h TTL over one blip.
      *
      * @param  array<int, array{type: string, id: string}>  $seeds
-     * @return array<int, array<int, array{type: string, id: string, title: string, poster_path: ?string, poster_url: ?string, date: ?string, overview: ?string, vote_average: ?float, genres: array<int, string>}>> Results per seed, in $seeds order.
+     * @return array<int, ?array<int, array{type: string, id: string, title: string, poster_path: ?string, poster_url: ?string, date: ?string, overview: ?string, vote_average: ?float, genres: array<int, string>}>> Results per seed, in $seeds order; null where the fetch failed.
      */
     public function recommendations(array $seeds): array
     {
@@ -122,7 +134,7 @@ class TmdbClient
                 if (! $response instanceof Response || $response->failed()) {
                     Log::warning('TMDB recommendations failed', ['seed' => $seed]);
 
-                    return [];
+                    return null;
                 }
 
                 return collect($response->json('results', []))
@@ -242,7 +254,7 @@ class TmdbClient
         return $topBilled
             ->map(fn (array $member, int $index) => [
                 'name' => $member['name'] ?? 'Unknown',
-                'character' => $member['character'] ?: null,
+                'character' => ($member['character'] ?? '') ?: null,
                 'profile_path' => $member['profile_path'] ?? null,
                 'imdb_id' => $imdbIds[$index] ?? null,
             ])
@@ -343,8 +355,9 @@ class TmdbClient
 
         // Seasons are independent requests, so fetch them concurrently instead of
         // one at a time — a long-running show can have 15+ seasons, and this runs
-        // for every tracked show in the daily refresh job.
-        $seasons = range(1, $numberOfSeasons);
+        // for every tracked show in the daily refresh job. Capped since
+        // $numberOfSeasons is TMDB-supplied data, not a value this app controls.
+        $seasons = range(1, min($numberOfSeasons, self::MAX_SEASONS_PER_FETCH));
         $responses = Http::pool(fn ($pool) => collect($seasons)
             ->map(fn (int $season) => $this->pooledClient($pool, $season)
                 ->get("/tv/{$id}/season/{$season}", ['api_key' => $this->key]))

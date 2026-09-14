@@ -140,13 +140,24 @@ class RecommendationService
 
         $fetched = $this->tmdb->recommendations($misses);
 
-        if ($fetched !== []) {
-            Cache::putMany(
-                collect($fetched)->mapWithKeys(fn (array $result, int $index) => [$this->cacheKey($misses[$index]) => $result])->all(),
-                now()->addMinutes(self::CACHE_TTL_MINUTES),
-            );
+        // null marks a seed whose TMDB fetch failed (see TmdbClient::recommendations()'s
+        // docblock) — skipped here rather than cached, so one blip doesn't blank that
+        // seed's recommendations out for the full 12h TTL. It's also left out of
+        // $results: there's nothing to show for it on this request either, but the
+        // next visit gets a clean retry instead of a cached empty list.
+        $toCache = [];
 
-            $results = array_merge($results, $fetched);
+        foreach ($fetched as $index => $result) {
+            if ($result === null) {
+                continue;
+            }
+
+            $toCache[$this->cacheKey($misses[$index])] = $result;
+            $results[] = $result;
+        }
+
+        if ($toCache !== []) {
+            Cache::putMany($toCache, now()->addMinutes(self::CACHE_TTL_MINUTES));
         }
 
         return array_merge(...$results ?: [[]]);

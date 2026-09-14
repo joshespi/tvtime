@@ -123,6 +123,29 @@ class RecommendationServiceTest extends TestCase
         $this->assertSame([], $this->service->forUser($user));
     }
 
+    public function test_a_failed_recommendation_fetch_is_not_cached_and_is_retried_on_the_next_call(): void
+    {
+        // Regression: TmdbClient::recommendations() used to return [] (not
+        // null) for a seed whose fetch failed, and this service cached that []
+        // for 12h same as a real empty result — one TMDB blip would blank a
+        // seed's recommendations out for the rest of the day even after TMDB
+        // recovered.
+        $user = User::factory()->create();
+        $show = Show::factory()->create(['tmdb_id' => '1396']);
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+
+        Http::fake([
+            'api.themoviedb.org/3/tv/1396/recommendations*' => Http::sequence()
+                ->push(['results' => []], 500)
+                ->push(['results' => [
+                    ['id' => 2, 'name' => 'Better Call Saul', 'first_air_date' => '2015-02-08', 'poster_path' => null, 'overview' => 'o', 'vote_average' => 8.5],
+                ]]),
+        ]);
+
+        $this->assertSame([], $this->service->forUser($user));
+        $this->assertCount(1, $this->service->forUser($user));
+    }
+
     public function test_returns_empty_when_nothing_is_tracked(): void
     {
         $user = User::factory()->create();
