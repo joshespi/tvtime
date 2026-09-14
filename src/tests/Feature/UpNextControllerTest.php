@@ -34,12 +34,21 @@ class UpNextControllerTest extends TestCase
         Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->subWeek(), 'title' => 'First Aired']);
         Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 3, 'air_date' => today()->addWeek(), 'title' => 'Not Aired Yet']);
 
+        // A second watching show, to catch a regression to a single global
+        // eager-load limit(1) instead of one per parent — that bug would pass
+        // this test with only one show tracked.
+        $otherShow = Show::factory()->create(['title' => 'The Wire']);
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $otherShow->id, 'status' => 'watching']);
+        Episode::factory()->create(['show_id' => $otherShow->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->subWeek(), 'title' => 'Other Show First Aired']);
+
         $response = $this->actingAs($user)->get('/dashboard');
 
         $response->assertOk();
         $upNext = $response->viewData('upNext');
-        $this->assertCount(1, $upNext);
-        $this->assertSame('First Aired', $upNext[0]['episode']->title);
+        $this->assertCount(2, $upNext);
+        $titles = collect($upNext)->pluck('episode.title');
+        $this->assertTrue($titles->contains('First Aired'));
+        $this->assertTrue($titles->contains('Other Show First Aired'));
     }
 
     public function test_omits_shows_with_nothing_unwatched(): void
