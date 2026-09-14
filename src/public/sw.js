@@ -41,18 +41,23 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
-    const url = (event.notification.data && event.notification.data.url) || '/dashboard';
+    const target = (event.notification.data && event.notification.data.url) || '/dashboard';
+    // Resolved to an absolute URL up front: client.url below is always absolute
+    // (e.g. "https://host/dashboard"), so comparing it against a bare path like
+    // "/dashboard" never matched and this always fell through to opening a new
+    // window instead of focusing the already-open app.
+    const targetUrl = new URL(target, self.location.origin).href;
 
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
             for (const client of clientList) {
-                if (client.url === url && 'focus' in client) {
+                if (client.url === targetUrl && 'focus' in client) {
                     return client.focus();
                 }
             }
 
             if (self.clients.openWindow) {
-                return self.clients.openWindow(url);
+                return self.clients.openWindow(targetUrl);
             }
         })
     );
