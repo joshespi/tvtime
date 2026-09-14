@@ -96,15 +96,7 @@ Alpine.data('trackButton', (storeUrl, type, externalId) => ({
         this.message = '';
 
         try {
-            const response = await fetch(storeUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken(),
-                    Accept: 'application/json',
-                },
-                body: JSON.stringify({ type, external_id: externalId }),
-            });
+            const response = await sendJson(storeUrl, { type, external_id: externalId });
 
             const data = await response.json();
 
@@ -134,7 +126,22 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 function csrfToken() {
-    return document.querySelector('meta[name="csrf-token"]').content;
+    return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+}
+
+// Every write this file makes wants the same JSON + CSRF envelope; the token is
+// read per call rather than captured, so a page live long enough to be issued a
+// fresh one doesn't keep posting the stale value.
+function sendJson(url, body, method = 'POST') {
+    return fetch(url, {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken(),
+            Accept: 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
 }
 
 // Subscribing is entirely a browser API (Notification.requestPermission + PushManager);
@@ -188,15 +195,7 @@ Alpine.data('pushNotifications', (vapidPublicKey, subscribeUrl, unsubscribeUrl) 
             applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
         });
 
-        await fetch(subscribeUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken(),
-                Accept: 'application/json',
-            },
-            body: JSON.stringify(subscription.toJSON()),
-        });
+        await sendJson(subscribeUrl, subscription.toJSON());
 
         this.subscribed = true;
     },
@@ -213,15 +212,7 @@ Alpine.data('pushNotifications', (vapidPublicKey, subscribeUrl, unsubscribeUrl) 
         const endpoint = subscription.endpoint;
         await subscription.unsubscribe();
 
-        await fetch(unsubscribeUrl, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken(),
-                Accept: 'application/json',
-            },
-            body: JSON.stringify({ endpoint }),
-        });
+        await sendJson(unsubscribeUrl, { endpoint }, 'DELETE');
 
         this.subscribed = false;
     },
@@ -266,7 +257,7 @@ function displayMode() {
 document.addEventListener('click', (event) => {
     const link = event.target.closest?.('a[href]');
 
-    if (! link || ! link.hostname || link.hostname === location.hostname) {
+    if (! link || ! link.hostname || link.origin === location.origin) {
         return;
     }
 
