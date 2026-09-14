@@ -23,12 +23,16 @@ Route::get('/manifest.webmanifest', function () {
     return response()->view('manifest')->header('Content-Type', 'application/manifest+json');
 })->name('manifest');
 
-Route::post('/client-errors', [ClientErrorController::class, 'store'])->name('client-errors.store');
+Route::post('/client-errors', [ClientErrorController::class, 'store'])
+    ->middleware('throttle:20,1')
+    ->name('client-errors.store');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', UpNextController::class)->name('dashboard');
 
-    Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('search.suggest');
+    Route::get('/search/suggest', [SearchController::class, 'suggest'])
+        ->middleware('throttle:30,1')
+        ->name('search.suggest');
     Route::post('/search', [SearchController::class, 'store'])->name('search.store');
 
     Route::get('/catalog/{type}/{tmdbId}', [CatalogController::class, 'show'])
