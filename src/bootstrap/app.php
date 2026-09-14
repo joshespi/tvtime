@@ -25,7 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('app:check-movie-releases')->daily();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Additive, not a replacement for the default expectsJson() check —
+        // there are no api/* routes here, only Alpine's fetch() calls (which
+        // set Accept: application/json and so already satisfy expectsJson()
+        // on their own). A bare `fn ($r) => $r->is('api/*')` would win over
+        // the default and make every one of those calls get back a redirect
+        // to a login/validation page instead of the JSON they're parsing.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request, Throwable $e) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();

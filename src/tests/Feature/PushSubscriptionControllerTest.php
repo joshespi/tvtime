@@ -10,11 +10,16 @@ class PushSubscriptionControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guests_are_redirected_to_login(): void
+    public function test_guests_get_a_json_401_instead_of_a_redirect(): void
     {
-        // Exception JSON rendering is scoped to api/* routes (see bootstrap/app.php),
-        // so even a JSON request to this web route gets the redirect-based 401 handling.
-        $this->postJson('/push-subscriptions', [])->assertRedirect('/login');
+        // bootstrap/app.php's shouldRenderJsonWhen() is additive to Laravel's
+        // default expectsJson() check, not a replacement for it — a JSON
+        // request to any web route still gets a JSON error response, which is
+        // what every caller here (pushNotifications() in app.js) actually reads.
+        $response = $this->postJson('/push-subscriptions', []);
+
+        $response->assertUnauthorized();
+        $response->assertJson(['message' => 'Unauthenticated.']);
     }
 
     public function test_store_subscribes_the_user(): void
@@ -37,7 +42,11 @@ class PushSubscriptionControllerTest extends TestCase
 
         $response = $this->actingAs($user)->postJson('/push-subscriptions', []);
 
-        $response->assertSessionHasErrors(['endpoint', 'keys.p256dh', 'keys.auth']);
+        // A JSON request now gets the validation errors back as JSON (422),
+        // rather than a redirect carrying them in the session — see the
+        // shouldRenderJsonWhen() fix referenced above.
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['endpoint', 'keys.p256dh', 'keys.auth']);
     }
 
     public function test_destroy_unsubscribes_the_user(): void

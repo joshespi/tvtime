@@ -183,6 +183,25 @@ class SearchControllerTest extends TestCase
         $this->assertDatabaseCount('user_shows', 1);
     }
 
+    public function test_store_returns_a_json_validation_error_when_the_request_wants_json(): void
+    {
+        // Regression: shouldRenderJsonWhen() in bootstrap/app.php used to
+        // replace Laravel's default expectsJson() check instead of adding to
+        // it, so this — an automatic ValidationException, not the controller's
+        // own respondError() branch — used to redirect even on an XHR request,
+        // and trackButton()'s `await response.json()` would throw on the
+        // followed redirect's HTML body.
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->postJson('/search', [
+            'type' => 'bogus',
+            'external_id' => '1',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('type');
+    }
+
     public function test_store_returns_a_json_error_when_the_show_is_not_found(): void
     {
         $user = User::factory()->create();
