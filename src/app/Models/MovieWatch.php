@@ -13,7 +13,7 @@ class MovieWatch extends Model
     /** @use HasFactory<MovieWatchFactory> */
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $fillable = ['user_movie_id', 'watched_at'];
 
     protected function casts(): array
     {

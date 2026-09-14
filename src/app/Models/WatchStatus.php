@@ -14,7 +14,7 @@ class WatchStatus extends Model
 
     protected $table = 'watch_status';
 
-    protected $guarded = ['id'];
+    protected $fillable = ['user_id', 'episode_id', 'watched_at'];
 
     protected function casts(): array
     {

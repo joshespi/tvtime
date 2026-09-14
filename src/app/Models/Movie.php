@@ -13,7 +13,10 @@ class Movie extends Model
     /** @use HasFactory<MovieFactory> */
     use HasFactory, HasTmdbPoster;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'tmdb_id', 'title', 'poster_path', 'overview', 'status', 'vote_average',
+        'genres', 'release_date', 'synced_at', 'cast', 'trailer_key',
+    ];
 
     protected function casts(): array
     {

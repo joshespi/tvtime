@@ -15,7 +15,7 @@ class Episode extends Model
     /** @use HasFactory<EpisodeFactory> */
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $fillable = ['show_id', 'season', 'episode_number', 'title', 'air_date', 'tmdb_id'];
 
     protected function casts(): array
     {

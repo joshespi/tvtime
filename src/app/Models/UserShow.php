@@ -14,7 +14,7 @@ class UserShow extends Model
     /** @use HasFactory<UserShowFactory> */
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $fillable = ['user_id', 'show_id', 'status', 'rating', 'note'];
 
     protected function casts(): array
     {

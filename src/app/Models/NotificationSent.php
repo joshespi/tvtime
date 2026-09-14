@@ -14,7 +14,7 @@ class NotificationSent extends Model
 
     protected $table = 'notifications_sent';
 
-    protected $guarded = ['id'];
+    protected $fillable = ['user_id', 'subject_type', 'subject_id', 'channel', 'sent_at'];
 
     protected function casts(): array
     {

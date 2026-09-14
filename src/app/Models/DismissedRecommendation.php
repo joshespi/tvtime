@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DismissedRecommendation extends Model
 {
-    protected $guarded = ['id'];
+    protected $fillable = ['user_id', 'type', 'tmdb_id'];
 
     public function user(): BelongsTo
     {
