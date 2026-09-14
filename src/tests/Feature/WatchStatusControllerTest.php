@@ -26,6 +26,7 @@ class WatchStatusControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $episode = Episode::factory()->create();
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $episode->show_id]);
 
         $response = $this->actingAs($user)->post("/episodes/{$episode->id}/toggle-watched");
 
@@ -38,6 +39,7 @@ class WatchStatusControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $episode = Episode::factory()->create();
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $episode->show_id]);
         WatchStatus::factory()->watched()->create(['user_id' => $user->id, 'episode_id' => $episode->id]);
 
         $this->actingAs($user)->post("/episodes/{$episode->id}/toggle-watched");
@@ -50,6 +52,7 @@ class WatchStatusControllerTest extends TestCase
         $userA = User::factory()->create();
         $userB = User::factory()->create();
         $episode = Episode::factory()->create();
+        UserShow::factory()->create(['user_id' => $userA->id, 'show_id' => $episode->show_id]);
 
         $this->actingAs($userA)->post("/episodes/{$episode->id}/toggle-watched");
 
@@ -57,10 +60,32 @@ class WatchStatusControllerTest extends TestCase
         $this->assertDatabaseMissing('watch_status', ['user_id' => $userB->id, 'episode_id' => $episode->id]);
     }
 
+    public function test_toggle_forbids_an_episode_of_a_show_the_user_does_not_track(): void
+    {
+        $user = User::factory()->create();
+        $episode = Episode::factory()->create();
+
+        $response = $this->actingAs($user)->post("/episodes/{$episode->id}/toggle-watched");
+
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('watch_status', ['user_id' => $user->id, 'episode_id' => $episode->id]);
+    }
+
+    public function test_mark_through_forbids_an_episode_of_a_show_the_user_does_not_track(): void
+    {
+        $user = User::factory()->create();
+        $episode = Episode::factory()->create();
+
+        $response = $this->actingAs($user)->post("/episodes/{$episode->id}/mark-through");
+
+        $response->assertForbidden();
+    }
+
     public function test_mark_through_marks_earlier_episodes_watched(): void
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
         $e1 = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1]);
         $e2 = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 2]);
 

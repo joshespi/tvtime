@@ -11,6 +11,8 @@ class WatchStatusController extends Controller
 {
     public function toggle(Request $request, Episode $episode): RedirectResponse
     {
+        $this->authorizeTracked($request, $episode);
+
         $status = WatchStatus::firstOrNew([
             'user_id' => $request->user()->id,
             'episode_id' => $episode->id,
@@ -30,11 +32,27 @@ class WatchStatusController extends Controller
      */
     public function markThrough(Request $request, Episode $episode): RedirectResponse
     {
+        $this->authorizeTracked($request, $episode);
+
         $episode->markWatchedThrough($request->user()->id);
 
         $this->refreshFinishedStatus($request, $episode);
 
         return back();
+    }
+
+    /**
+     * Episode has no owning-user column of its own to check against — a watch
+     * status belongs to the user, not the episode — so there's no Model for
+     * Gate::authorize() to hand a policy. This is the equivalent check: without
+     * it, any authenticated user could POST an arbitrary episode id and record
+     * a watch (and skew their own stats/streaks) for a show they never tracked.
+     */
+    private function authorizeTracked(Request $request, Episode $episode): void
+    {
+        $tracked = $request->user()->shows()->where('show_id', $episode->show_id)->exists();
+
+        abort_unless($tracked, 403);
     }
 
     /**
