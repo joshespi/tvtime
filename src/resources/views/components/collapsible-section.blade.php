@@ -31,14 +31,22 @@
             (function () {
                 var details = document.currentScript.parentElement;
                 var key = 'collapsible:' + @js($storageKey);
-                var stored = localStorage.getItem(key);
+                // localStorage can throw (private browsing / blocked site data)
+                // rather than just returning null — either way this falls back
+                // to the $open default instead of taking the page down.
+                var stored = null;
+                try {
+                    stored = localStorage.getItem(key);
+                } catch (e) {}
 
                 if (stored !== null) {
                     details.open = stored === '1';
                 }
 
                 details.addEventListener('toggle', function () {
-                    localStorage.setItem(key, details.open ? '1' : '0');
+                    try {
+                        localStorage.setItem(key, details.open ? '1' : '0');
+                    } catch (e) {}
                 });
             })();
         </script>
