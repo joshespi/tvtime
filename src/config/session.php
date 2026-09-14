@@ -169,7 +169,17 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // Defaults to the scheme of APP_URL rather than plain null/false: nginx
+    // here (see docker/nginx/default.conf) always terminates plain HTTP, TLS
+    // is handled by whatever reverse proxy sits in front of it in production,
+    // so the previous default silently shipped every deploy without a
+    // Secure-flagged session cookie — the app's only auth credential — unless
+    // someone remembered to set SESSION_SECURE_COOKIE by hand. Deriving it
+    // from APP_URL's scheme means an https:// production install (the normal
+    // case, reachable through TRUSTED_PROXIES) gets Secure automatically,
+    // while a plain http://localhost dev install isn't forced into a cookie
+    // the browser would then silently refuse to send back.
+    'secure' => env('SESSION_SECURE_COOKIE', str_starts_with((string) env('APP_URL'), 'https://')),
 
     /*
     |--------------------------------------------------------------------------
