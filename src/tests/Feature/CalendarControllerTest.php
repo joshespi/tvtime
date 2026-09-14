@@ -75,6 +75,32 @@ class CalendarControllerTest extends TestCase
         $this->assertSame(0, $episodeCount);
     }
 
+    public function test_shows_items_airing_on_a_leading_grid_day_outside_the_month(): void
+    {
+        // Regression: the controller used to query [start-of-month, end-of-month]
+        // but render a wider grid padded out to whole weeks (see the leading/
+        // trailing cells this asserts on below) — anything airing on one of
+        // those padding days was queried out before the view ever saw it.
+        // Feb 2030 starts on a Friday, so its grid's first cell is Sun 2030-01-27.
+        $user = User::factory()->create();
+        $leadingGridDay = Carbon::parse('2030-01-27');
+
+        $show = Show::factory()->create();
+        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        Episode::factory()->create(['show_id' => $show->id, 'air_date' => $leadingGridDay]);
+
+        $response = $this->actingAs($user)->get('/calendar?month=2030-02');
+
+        $response->assertOk();
+        $day = collect($response->viewData('weeks'))
+            ->flatten(1)
+            ->first(fn (array $day) => $day['date']->isSameDay($leadingGridDay));
+
+        $this->assertNotNull($day);
+        $this->assertFalse($day['inMonth']);
+        $this->assertSame(1, $day['episodes']->count());
+    }
+
     public function test_accepts_a_month_parameter(): void
     {
         $user = User::factory()->create();

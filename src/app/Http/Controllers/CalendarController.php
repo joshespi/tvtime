@@ -21,7 +21,7 @@ class CalendarController extends Controller
         $userId = $request->user()->id;
 
         $monthParam = $request->string('month')->toString();
-        $anchor = preg_match('/^\d{4}-\d{2}$/', $monthParam)
+        $anchor = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $monthParam)
             ? Carbon::createFromFormat('Y-m-d', "{$monthParam}-01")->startOfMonth()
             : Carbon::now()->startOfMonth();
 
@@ -29,22 +29,28 @@ class CalendarController extends Controller
         // as the range start.
         $end = $anchor->copy()->endOfMonth();
 
+        // The grid shows a few days from the adjacent months to fill out whole
+        // weeks (see the loop below) — computed first so the queries can cover
+        // that same range instead of just the calendar month, which silently
+        // dropped anything airing on a leading/trailing grid day.
+        $gridStart = $anchor->copy()->startOfWeek(Carbon::SUNDAY);
+        $gridEnd = $end->copy()->endOfWeek(Carbon::SUNDAY);
+
         $episodesByDate = Episode::query()
-            ->whereBetween('air_date', [$anchor->toDateString(), $end->toDateString()])
+            ->whereBetween('air_date', [$gridStart->toDateString(), $gridEnd->toDateString()])
             ->whereHas('show.userShows', fn ($query) => $query->where('user_id', $userId)->active())
             ->with('show')
             ->get()
             ->groupBy(fn (Episode $episode) => $episode->air_date->toDateString());
 
         $moviesByDate = Movie::query()
-            ->whereBetween('release_date', [$anchor->toDateString(), $end->toDateString()])
+            ->whereBetween('release_date', [$gridStart->toDateString(), $gridEnd->toDateString()])
             ->whereHas('userMovies', fn ($query) => $query->where('user_id', $userId))
             ->get()
             ->groupBy(fn (Movie $movie) => $movie->release_date->toDateString());
 
         $weeks = [];
-        $cursor = $anchor->copy()->startOfWeek(Carbon::SUNDAY);
-        $gridEnd = $end->copy()->endOfWeek(Carbon::SUNDAY);
+        $cursor = $gridStart->copy();
 
         while ($cursor->lte($gridEnd)) {
             $week = [];
