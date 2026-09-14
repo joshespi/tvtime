@@ -44,12 +44,11 @@ class CheckNewEpisodesTest extends TestCase
 
         $this->artisan('app:check-new-episodes')->assertSuccessful();
 
+        // notifications_sent is no longer written at queue-time — it's written
+        // by App\Listeners\RecordNotificationSent once a channel actually
+        // delivers, which Notification::fake() intentionally bypasses (see that
+        // listener's own test). This asserts the command queued the send.
         Notification::assertSentTo($user, NewEpisodeAired::class);
-        $this->assertDatabaseHas('notifications_sent', [
-            'user_id' => $user->id,
-            'subject_type' => Episode::class,
-            'subject_id' => $episode->id,
-        ]);
     }
 
     public function test_does_not_notify_for_episodes_not_airing_today(): void

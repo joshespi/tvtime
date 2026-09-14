@@ -40,12 +40,11 @@ class CheckMovieReleasesTest extends TestCase
 
         $this->artisan('app:check-movie-releases')->assertSuccessful();
 
+        // notifications_sent is no longer written at queue-time — it's written
+        // by App\Listeners\RecordNotificationSent once a channel actually
+        // delivers, which Notification::fake() intentionally bypasses (see that
+        // listener's own test). This asserts the command queued the send.
         Notification::assertSentTo($user, MovieReleased::class);
-        $this->assertDatabaseHas('notifications_sent', [
-            'user_id' => $user->id,
-            'subject_type' => Movie::class,
-            'subject_id' => $movie->id,
-        ]);
     }
 
     public function test_does_not_notify_for_movies_not_releasing_today(): void

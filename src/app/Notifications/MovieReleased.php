@@ -3,18 +3,26 @@
 namespace App\Notifications;
 
 use App\Models\Movie;
+use App\Notifications\Concerns\TracksNotificationSubject;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Queue\SerializesModels;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-class MovieReleased extends Notification implements ShouldQueue
+class MovieReleased extends Notification implements ShouldQueue, TracksNotificationSubject
 {
-    use Queueable;
+    // See NewEpisodeAired's comment — same reasoning for Movie.
+    use Queueable, SerializesModels;
 
     public function __construct(private readonly Movie $movie) {}
+
+    public function subject(): Movie
+    {
+        return $this->movie;
+    }
 
     /**
      * @return array<int, string>

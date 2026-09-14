@@ -38,8 +38,12 @@ class DedupedNotifierTest extends TestCase
         $this->assertTrue(DedupedNotifier::alreadySent([])->isEmpty());
     }
 
-    public function test_notify_once_sends_and_records_when_not_already_sent(): void
+    public function test_notify_once_sends_when_not_already_sent(): void
     {
+        // notifications_sent is no longer written by notifyOnce() itself — see
+        // App\Listeners\RecordNotificationSent — so under Notification::fake()
+        // (which swaps out real delivery entirely) no row appears here. That
+        // listener's own test covers the recording; this one covers dispatch.
         Notification::fake();
 
         $user = User::factory()->create();
@@ -54,15 +58,6 @@ class DedupedNotifierTest extends TestCase
 
         $this->assertTrue($sent);
         Notification::assertSentTo($user, NewEpisodeAired::class);
-
-        foreach (['mail', 'push'] as $channel) {
-            $this->assertDatabaseHas('notifications_sent', [
-                'user_id' => $user->id,
-                'subject_type' => Episode::class,
-                'subject_id' => $episode->id,
-                'channel' => $channel,
-            ]);
-        }
     }
 
     public function test_notify_once_skips_when_already_sent(): void
@@ -84,6 +79,26 @@ class DedupedNotifierTest extends TestCase
         $this->assertFalse($sent);
         Notification::assertNothingSent();
         $this->assertDatabaseCount('notifications_sent', 0);
+    }
+
+    public function test_notify_once_records_into_the_same_lookup_to_prevent_a_double_send_within_one_run(): void
+    {
+        // Regression: notifyOnce() used to leave $alreadySent untouched after
+        // queueing, so calling it twice for the same (user, subject) pair in
+        // one run — the shape both console commands loop in — queued the
+        // notification twice.
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $episode = Episode::factory()->create();
+        $alreadySent = collect();
+
+        $first = DedupedNotifier::notifyOnce($alreadySent, $user, new NewEpisodeAired($episode), $episode);
+        $second = DedupedNotifier::notifyOnce($alreadySent, $user, new NewEpisodeAired($episode), $episode);
+
+        $this->assertTrue($first);
+        $this->assertFalse($second);
+        Notification::assertSentToTimes($user, NewEpisodeAired::class, 1);
     }
 
     public function test_notifications_for_different_media_types_do_not_collide(): void

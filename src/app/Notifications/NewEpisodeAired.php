@@ -3,18 +3,29 @@
 namespace App\Notifications;
 
 use App\Models\Episode;
+use App\Notifications\Concerns\TracksNotificationSubject;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Queue\SerializesModels;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-class NewEpisodeAired extends Notification implements ShouldQueue
+class NewEpisodeAired extends Notification implements ShouldQueue, TracksNotificationSubject
 {
-    use Queueable;
+    // SerializesModels so the queued job carries the episode's id (re-hydrated
+    // on the worker) rather than the whole Episode instance — without it, every
+    // subscriber's job serializes the full model (and its loaded `show`) into
+    // the jobs table instead of a lightweight reference.
+    use Queueable, SerializesModels;
 
     public function __construct(private readonly Episode $episode) {}
+
+    public function subject(): Episode
+    {
+        return $this->episode;
+    }
 
     /**
      * @return array<int, string>

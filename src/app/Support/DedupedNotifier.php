@@ -31,9 +31,21 @@ class DedupedNotifier
             return collect();
         }
 
+        // Grouped by morph type and OR'd rather than one whereIn(id) + one
+        // whereIn(type): those two lists aren't paired, so a mixed-type
+        // $subjects (an episode and a movie sharing a numeric id) would let an
+        // unrelated row's type match an unrelated row's id and read as sent.
+        $byType = $subjects->groupBy(fn (Model $s) => $s->getMorphClass());
+
         return NotificationSent::query()
-            ->whereIn('subject_id', $subjects->map(fn (Model $s) => $s->getKey()))
-            ->whereIn('subject_type', $subjects->map(fn (Model $s) => $s->getMorphClass())->unique())
+            ->where(function ($query) use ($byType) {
+                foreach ($byType as $subjectType => $group) {
+                    $query->orWhere(function ($query) use ($subjectType, $group) {
+                        $query->where('subject_type', $subjectType)
+                            ->whereIn('subject_id', $group->map(fn (Model $s) => $s->getKey()));
+                    });
+                }
+            })
             ->get(['user_id', 'subject_type', 'subject_id'])
             ->map(fn (NotificationSent $sent) => self::key($sent->user_id, $sent->subject_type, $sent->subject_id))
             ->unique()
@@ -41,9 +53,18 @@ class DedupedNotifier
     }
 
     /**
-     * Notify $user about $subject unless already recorded in $alreadySent, then record it.
+     * Queue $user's notification about $subject unless already recorded in
+     * $alreadySent.
      *
-     * @return bool Whether a notification was actually sent.
+     * The actual notifications_sent row is no longer written here — see
+     * App\Listeners\RecordNotificationSent — because $user->notify() only
+     * queues one job per channel; recording "sent" at that point means a job
+     * that later exhausts its retries (a mail-server blip, a dead push
+     * endpoint) still permanently reads as delivered. The listener writes the
+     * row once a channel actually completes, so a fully-failed send is retried
+     * on the next command run instead of being silently swallowed forever.
+     *
+     * @return bool Whether a notification was actually queued.
      */
     public static function notifyOnce(
         Collection $alreadySent,
@@ -59,23 +80,11 @@ class DedupedNotifier
 
         $user->notify($notification);
 
-        // One multi-row insert rather than one round trip per channel — this runs
-        // once per (subject × subscriber) pair, so the loop adds up fast.
-        $now = now();
-
-        NotificationSent::insert(
-            collect($notification->via($user))
-                ->map(fn (string $channel) => [
-                    'user_id' => $user->getKey(),
-                    'subject_type' => $subject->getMorphClass(),
-                    'subject_id' => $subject->getKey(),
-                    'channel' => $channel === 'mail' ? 'mail' : 'push',
-                    'sent_at' => $now,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ])
-                ->all()
-        );
+        // Recorded back into the same lookup the caller is iterating with, so a
+        // subject with more than one subscriber in the same run can't be queued
+        // twice — alreadySent is built once up front from the database, before
+        // any of this run's sends have landed (or, now, even completed).
+        $alreadySent->put($key, true);
 
         return true;
     }
