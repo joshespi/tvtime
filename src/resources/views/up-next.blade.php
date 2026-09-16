@@ -41,17 +41,13 @@
             @endif
 
             @if ($airingSoon->isNotEmpty())
-                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Airing Soon</h3>
-                <x-card-grid>
-                    @foreach ($airingSoon as $entry)
-                        <x-show-episode-card :show="$entry['show']">
-                            <x-slot:meta>
-                                <span>{{ $entry['episode']->label() }}</span>
-                                <x-countdown :date="$entry['episode']->air_date" />
-                            </x-slot:meta>
-                        </x-show-episode-card>
-                    @endforeach
-                </x-card-grid>
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Airing Soon</h3>
+                    @if ($airingSoonHasMore)
+                        <a href="{{ route('airing-soon.index') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">See all</a>
+                    @endif
+                </div>
+                <x-airing-soon-grid :entries="$airingSoon" />
             @endif
 
             @if ($upNext->isEmpty() && $airingSoon->isEmpty() && $movieWatchlist->isEmpty())

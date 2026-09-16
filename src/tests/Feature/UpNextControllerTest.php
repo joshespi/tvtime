@@ -22,6 +22,11 @@ class UpNextControllerTest extends TestCase
         $this->get('/dashboard')->assertRedirect('/login');
     }
 
+    public function test_guests_are_redirected_to_login_from_airing_soon(): void
+    {
+        $this->get('/airing-soon')->assertRedirect('/login');
+    }
+
     public function test_shows_the_earliest_unwatched_aired_episode_per_show(): void
     {
         Http::fake();
@@ -111,6 +116,56 @@ class UpNextControllerTest extends TestCase
         $airingSoon = $response->viewData('airingSoon');
         $this->assertCount(1, $airingSoon);
         $this->assertSame(1, $airingSoon[0]['episode']->episode_number);
+    }
+
+    public function test_dashboard_trims_airing_soon_to_one_row_and_links_to_the_full_list(): void
+    {
+        Http::fake();
+
+        $user = User::factory()->create();
+
+        foreach (range(1, 4) as $i) {
+            $show = Show::factory()->create();
+            UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+            Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->addDays($i)]);
+        }
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $response->assertOk();
+        $this->assertCount(3, $response->viewData('airingSoon'));
+        $this->assertTrue($response->viewData('airingSoonHasMore'));
+        $response->assertSee(route('airing-soon.index'), false);
+    }
+
+    public function test_airing_soon_index_lists_the_full_upcoming_list(): void
+    {
+        Http::fake();
+
+        $user = User::factory()->create();
+
+        foreach (range(1, 4) as $i) {
+            $show = Show::factory()->create();
+            UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+            Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->addDays($i)]);
+        }
+
+        $response = $this->actingAs($user)->get('/airing-soon');
+
+        $response->assertOk();
+        $this->assertCount(4, $response->viewData('airingSoon'));
+    }
+
+    public function test_airing_soon_index_is_empty_when_nothing_upcoming(): void
+    {
+        Http::fake();
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/airing-soon');
+
+        $response->assertOk();
+        $this->assertCount(0, $response->viewData('airingSoon'));
     }
 
     public function test_airing_soon_omits_shows_with_nothing_upcoming(): void

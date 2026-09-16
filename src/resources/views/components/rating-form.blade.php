@@ -1,9 +1,16 @@
 @props(['rating' => null, 'note' => null, 'action'])
 
-{{-- Unlike <x-tracking-status-select>, this can't auto-submit on change — a
-     textarea needs a deliberate save, so both fields share one explicit
-     Save button instead. --}}
-<form method="POST" action="{{ $action }}" class="flex flex-wrap items-start gap-3">
+{{-- Auto-submitting on change, same pattern as <x-tracking-status-select> —
+     but debounced: unlike that single-field form, this one has two fields,
+     and submitting the instant either one changes would reload the page
+     before a rating pick and a note edit made in the same visit could both
+     land, silently deferring whichever one hadn't fired yet to a second
+     round trip. Each change (re)starts a short timer instead, so a rating
+     pick followed by a note edit (or vice versa) within the window is sent
+     together. --}}
+<form method="POST" action="{{ $action }}"
+      onchange="clearTimeout(this._submitTimer); this._submitTimer = setTimeout(() => this.submit(), 500)"
+      class="flex flex-wrap items-start gap-3">
     @csrf
     @method('PATCH')
     <div>
@@ -22,5 +29,5 @@
         <textarea name="note" id="note" rows="1" maxlength="{{ \App\Support\Rating::MAX_NOTE_LENGTH }}"
                   class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">{{ $note }}</textarea>
     </div>
-    <x-action-button class="mt-5">Save</x-action-button>
+    <noscript><x-action-button class="mt-5">Save</x-action-button></noscript>
 </form>

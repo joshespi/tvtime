@@ -29,6 +29,7 @@ Route::post('/client-errors', [ClientErrorController::class, 'store'])
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', UpNextController::class)->name('dashboard');
+    Route::get('/airing-soon', [UpNextController::class, 'airingSoon'])->name('airing-soon.index');
 
     Route::get('/search/suggest', [SearchController::class, 'suggest'])
         ->middleware('throttle:30,1')
