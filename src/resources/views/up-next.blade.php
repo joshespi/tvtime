@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="Up Next">
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">Up Next</h2>
     </x-slot>
@@ -19,9 +19,13 @@
                             <x-slot:meta>
                                 <span>{{ $entry['episode']->label() }}</span>
                                 <span class="text-gray-400 dark:text-gray-500">· aired {{ $entry['episode']->air_date?->format('M j, Y') }}</span>
+                                @if ($entry['backlog'] > 0)
+                                    <a href="{{ route('shows.show', $entry['show']) }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">+{{ $entry['backlog'] }} more</a>
+                                @endif
                             </x-slot:meta>
                             <form method="POST" action="{{ route('episodes.toggle-watched', $entry['episode']) }}">
                                 @csrf
+                                <input type="hidden" name="watched" value="1">
                                 <x-action-button>Mark watched</x-action-button>
                             </form>
                         </x-show-episode-card>
@@ -52,8 +56,13 @@
 
             @if ($upNext->isEmpty() && $airingSoon->isEmpty() && $movieWatchlist->isEmpty())
                 <x-empty-state>
-                    <p>Nothing new to watch right now.</p>
-                    <a href="{{ route('shows.index') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline text-sm">Manage your shows</a>
+                    @if ($hasTracked)
+                        <p>Nothing new to watch right now.</p>
+                        <a href="{{ route('shows.index') }}" class="text-indigo-600 dark:text-indigo-400 hover:underline text-sm">Manage your shows</a>
+                    @else
+                        <p class="font-medium text-gray-700 dark:text-gray-200">Welcome! Nothing is being tracked yet.</p>
+                        <p>Use the search box above to find a show or movie and add it — new episodes and releases will show up here.</p>
+                    @endif
                 </x-empty-state>
             @endif
 

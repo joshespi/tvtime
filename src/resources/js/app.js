@@ -304,4 +304,38 @@ window.addEventListener('unhandledrejection', (event) => {
     });
 });
 
+// Stops a double-tap from posting a form twice: once a form is on its way, its
+// submit buttons go dead. Runs in the bubble phase, so a form whose own handler
+// cancelled the submit (a declined confirm(), an Alpine @submit.prevent) is left
+// alone. pageshow re-arms the buttons when the browser restores the page from
+// its back/forward cache with them still disabled.
+document.addEventListener('submit', (event) => {
+    if (event.defaultPrevented) {
+        return;
+    }
+
+    const form = event.target;
+    // Deferred so the browser has already read the form (and the clicked
+    // button's own name/value) before anything gets disabled.
+    setTimeout(() => {
+        form.querySelectorAll('button[type="submit"], button:not([type])').forEach((button) => {
+            button.disabled = true;
+            button.dataset.submitting = '';
+            button.classList.add('opacity-60', 'cursor-wait');
+        });
+    }, 0);
+});
+
+window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) {
+        return;
+    }
+
+    document.querySelectorAll('form button[data-submitting]').forEach((button) => {
+        button.disabled = false;
+        delete button.dataset.submitting;
+        button.classList.remove('opacity-60', 'cursor-wait');
+    });
+});
+
 Alpine.start();

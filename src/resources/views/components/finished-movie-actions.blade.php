@@ -9,5 +9,6 @@
 </form>
 <form method="POST" action="{{ route('movies.toggle-watched', $userMovie) }}">
     @csrf
+    <input type="hidden" name="watched" value="0">
     <x-action-button>Mark unwatched</x-action-button>
 </form>

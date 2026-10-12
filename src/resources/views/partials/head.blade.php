@@ -1,8 +1,8 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
-<title>{{ config('app.name', 'Laravel') }}</title>
+<title>{{ isset($title) && $title ? $title.' · ' : '' }}{{ config('app.name', 'Laravel') }}</title>
 
 <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">

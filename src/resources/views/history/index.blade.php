@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="Watch History">
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">Watch History</h2>
     </x-slot>
@@ -37,6 +37,9 @@
                                             @isset($action['method'])
                                                 @method($action['method'])
                                             @endisset
+                                            @foreach ($action['fields'] ?? [] as $name => $value)
+                                                <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                                            @endforeach
                                             <x-action-button :variant="$action['variant'] ?? 'secondary'">{{ $action['label'] }}</x-action-button>
                                         </form>
                                     @endforeach
@@ -45,6 +48,10 @@
                         </x-card>
                     @endforeach
                 </x-card-grid>
+
+                @if ($truncated)
+                    <p class="text-xs text-gray-400 dark:text-gray-500 text-center">Showing your latest {{ $limit }} entries — export the CSV for the full history.</p>
+                @endif
             @else
                 <x-empty-state>Nothing marked watched yet.</x-empty-state>
             @endif

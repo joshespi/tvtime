@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\SavesRatings;
+use App\Models\Episode;
 use App\Models\Show;
 use App\Models\UserShow;
 use App\Services\Catalog\CatalogSearchService;
@@ -75,10 +76,21 @@ class ShowController extends Controller
 
         $episodes = $show->episodesWithWatchState($request->user()->id);
 
+        $seasons = $episodes->groupBy('season');
+
+        // Seasons start folded except the one the user is actually in: the
+        // first with an aired episode still unwatched, or the latest season
+        // when they're all caught up.
+        $openSeason = $seasons->search(fn ($episodes) => $episodes->contains(
+            fn (Episode $episode) => ! $episode->watched && $episode->hasAired()
+        ));
+        $openSeason = $openSeason === false ? $seasons->keys()->last() : $openSeason;
+
         return view('shows.show', [
             'show' => $show,
             'userShow' => $userShow,
-            'seasons' => $episodes->groupBy('season'),
+            'seasons' => $seasons,
+            'openSeason' => $openSeason,
         ]);
     }
 

@@ -59,13 +59,26 @@ class MovieController extends Controller
         ]);
     }
 
-    public function toggleWatched(UserMovie $userMovie): RedirectResponse
+    /**
+     * Flips watched/unwatched, unless the request names the state it wants
+     * (`watched=1|0`) — then a repeated request is a no-op rather than undoing
+     * the first one, and the Undo button can restore the exact prior state.
+     */
+    public function toggleWatched(Request $request, UserMovie $userMovie): RedirectResponse
     {
         Gate::authorize('update', $userMovie);
 
-        $userMovie->isFinished() ? $userMovie->markUnwatched() : $userMovie->markWatched();
+        $request->validate(['watched' => ['nullable', 'boolean']]);
 
-        return back();
+        $watched = $request->has('watched') ? $request->boolean('watched') : ! $userMovie->isFinished();
+
+        if ($watched !== $userMovie->isFinished()) {
+            $watched ? $userMovie->markWatched() : $userMovie->markUnwatched();
+        }
+
+        return back()
+            ->with('status', "\"{$userMovie->movie->title}\" marked ".($watched ? 'watched' : 'unwatched').'.')
+            ->with('undo', ['url' => route('movies.toggle-watched', $userMovie), 'watched' => ! $watched]);
     }
 
     /** Puts a finished movie back on the watchlist without losing that it was seen. */

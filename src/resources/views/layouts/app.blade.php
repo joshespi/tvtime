@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        @include('partials.head')
+        @include('partials.head', ['title' => $title ?? null])
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
@@ -21,11 +21,13 @@
                 {{ $slot }}
             </main>
 
-            <footer class="py-6 text-center text-xs text-gray-400 dark:text-gray-500 space-x-2">
+            <footer class="pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-6 text-center text-xs text-gray-400 dark:text-gray-500 space-x-2">
                 <a href="{{ route('donate') }}" class="hover:underline">Donate</a>
                 <span>&middot;</span>
                 <span>v{{ config('app.version') }}</span>
             </footer>
+
+            @include('layouts.bottom-tabs')
         </div>
     </body>
 </html>

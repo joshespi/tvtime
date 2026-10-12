@@ -8,7 +8,7 @@
     $date = $details['first_air_date'] ?? $details['release_date'] ?? null;
 @endphp
 
-<x-app-layout>
+<x-app-layout :title="$details['title']">
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
             {{ $details['title'] }}

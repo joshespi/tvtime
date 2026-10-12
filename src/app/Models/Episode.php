@@ -95,17 +95,19 @@ class Episode extends Model
             })
             ->pluck('id');
 
-        $now = now();
+        WatchStatus::markWatched($userId, $episodeIds);
+    }
 
-        WatchStatus::upsert(
-            $episodeIds->map(fn ($episodeId) => [
-                'user_id' => $userId,
-                'episode_id' => $episodeId,
-                'watched_at' => $now,
-            ])->all(),
-            ['user_id', 'episode_id'],
-            ['watched_at'],
-        );
+    /** Has a known air date that is today or earlier — the per-row twin of scopeAired(). */
+    public function hasAired(): bool
+    {
+        return $this->air_date !== null && ! $this->isUpcoming();
+    }
+
+    /** Has a known air date later than today — the per-row twin of scopeUpcoming(). */
+    public function isUpcoming(): bool
+    {
+        return $this->air_date !== null && $this->air_date->copy()->startOfDay()->gt(today());
     }
 
     public function code(): string

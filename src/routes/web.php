@@ -50,6 +50,9 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/episodes/{episode}/toggle-watched', [WatchStatusController::class, 'toggle'])->name('episodes.toggle-watched');
     Route::post('/episodes/{episode}/mark-through', [WatchStatusController::class, 'markThrough'])->name('episodes.mark-through');
+    Route::post('/shows/{show}/seasons/{season}/mark-watched', [WatchStatusController::class, 'markSeason'])
+        ->whereNumber('season')
+        ->name('seasons.mark-watched');
 
     Route::get('/movies', [MovieController::class, 'index'])->name('movies.index');
     Route::post('/movies/{userMovie}/toggle-watched', [MovieController::class, 'toggleWatched'])->name('movies.toggle-watched');

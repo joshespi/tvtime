@@ -20,14 +20,18 @@ class HistoryController extends Controller
         // Each entry carries an `actions` list rather than one nullable url key
         // per button, so the two entry types only declare what they actually
         // offer and the view renders them with one loop.
-        $history = $this->entries($request, self::LIMIT)->map(fn (array $entry) => [
+        // One past the cap, purely to learn whether the cap cut anything off.
+        $entries = $this->entries($request, self::LIMIT + 1);
+        $truncated = $entries->count() > self::LIMIT;
+
+        $history = $entries->take(self::LIMIT)->map(fn (array $entry) => [
             ...Arr::except($entry, ['poster', 'link', 'actions']),
             'poster_url' => $entry['poster'](),
             'link_url' => $entry['link'](),
             'actions' => $entry['actions'](),
         ]);
 
-        return view('history.index', ['history' => $history]);
+        return view('history.index', ['history' => $history, 'truncated' => $truncated, 'limit' => self::LIMIT]);
     }
 
     /** Every entry, unlimited — the page caps at LIMIT for load time, but an export is a one-off request the user chose to make. */
@@ -123,7 +127,7 @@ class HistoryController extends Controller
             'poster' => fn () => $watchStatus->episode->show->posterUrl(),
             'link' => fn () => route('shows.show', $watchStatus->episode->show),
             'actions' => fn () => [
-                ['label' => 'Mark unwatched', 'url' => route('episodes.toggle-watched', $watchStatus->episode)],
+                ['label' => 'Mark unwatched', 'url' => route('episodes.toggle-watched', $watchStatus->episode), 'fields' => ['watched' => 0]],
             ],
         ]);
 

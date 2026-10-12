@@ -50,6 +50,7 @@ class UpNextController extends Controller
             ->get();
 
         $upNext = $this->pairWithEpisode($watchingShows, fn (UserShow $userShow) => $userShow->show->episodes->first());
+        $upNext = $this->withBacklog($upNext, $userId);
 
         $airingSoon = $this->airingSoonFor($watchingShows);
 
@@ -65,6 +66,10 @@ class UpNextController extends Controller
             'airingSoon' => $airingSoon->take(self::AIRING_SOON_PREVIEW),
             'airingSoonHasMore' => $airingSoon->count() > self::AIRING_SOON_PREVIEW,
             'movieWatchlist' => $movieWatchlist,
+            // Only the empty state reads this, so don't ask the database
+            // unless every shelf above it came back empty.
+            'hasTracked' => $upNext->isNotEmpty() || $airingSoon->isNotEmpty() || $movieWatchlist->isNotEmpty()
+                || $request->user()->shows()->exists() || $request->user()->movies()->exists(),
             'recommendations' => $this->recommendations->forUser($request->user()),
             ...$this->catalog->forRequest($request),
         ]);
@@ -103,6 +108,34 @@ class UpNextController extends Controller
         return $this->pairWithEpisode($watchingShows, fn (UserShow $userShow) => $userShow->show->nextUpcomingEpisode)
             ->sortBy(fn (array $entry) => $entry['episode']->air_date)
             ->values();
+    }
+
+    /**
+     * Adds `backlog` to each entry: how many aired episodes are waiting after
+     * the one shown, so a show that's five episodes behind doesn't look the
+     * same as one that's just released its latest. One grouped count for the
+     * whole shelf rather than a query per show.
+     *
+     * @param  Collection<int, array{show: Show, episode: Episode}>  $entries
+     * @return Collection<int, array{show: Show, episode: Episode, backlog: int}>
+     */
+    private function withBacklog(Collection $entries, int $userId): Collection
+    {
+        if ($entries->isEmpty()) {
+            return $entries;
+        }
+
+        $unwatched = Episode::query()
+            ->whereIn('show_id', $entries->pluck('show.id'))
+            ->unwatchedAiredFor($userId)
+            ->selectRaw('show_id, count(*) as total')
+            ->groupBy('show_id')
+            ->pluck('total', 'show_id');
+
+        return $entries->map(fn (array $entry) => [
+            ...$entry,
+            'backlog' => max(0, (int) $unwatched->get($entry['show']->id, 0) - 1),
+        ]);
     }
 
     /**

@@ -6,6 +6,7 @@
      seen before is being watched *again*. --}}
 <form method="POST" action="{{ route('movies.toggle-watched', $userMovie) }}">
     @csrf
+    <input type="hidden" name="watched" value="1">
     <x-action-button :variant="$variant">
         {{ $userMovie->timesWatched() ? 'Mark watched again' : 'Mark watched' }}
     </x-action-button>

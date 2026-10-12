@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout title="My Shows">
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">My Shows</h2>
     </x-slot>
