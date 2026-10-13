@@ -18,14 +18,22 @@ docker compose build
 docker compose up -d
 ```
 
-The `app` container's entrypoint runs `composer install` and `migrate` on
-every start/rebuild — no manual migrate step needed. It also caches config
-and routes via `optimize`, but only when `APP_ENV=production`.
-
-Frontend assets aren't built by the containers (there's no Node in the PHP
-image). Run once, and again whenever you touch `resources/js` or
-`resources/css`:
+The `app` container's entrypoint runs `app-bootstrap` on every start —
+`composer install`, `migrate`, the front-end build, and (when
+`APP_ENV=production`) `optimize`. No manual steps needed. To rebuild just the
+assets after editing views/CSS/JS:
 
 ```bash
-docker compose run --rm node sh -c "npm install && npm run build"
+docker exec tv-tracker-app npm run build
 ```
+
+## Deploying
+
+On the server, from the repo root:
+
+```bash
+bash script/deploy.sh
+```
+
+Pulls `main`, brings the stack up to date, and checks `/up` — see the header
+of `script/deploy.sh`.

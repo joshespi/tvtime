@@ -48,6 +48,31 @@ x-app-service: &app-service
   networks:
     - laravel
 
+# queue + scheduler: the app image running something other than php-fpm.
+# Both run as www-data (not the container-default root) so any files they
+# write under storage/ stay writable by the php-fpm workers, which are also
+# www-data. And both wait on app's completion marker themselves: depends_on
+# only gates startup order for `docker compose up` — after a host reboot Docker
+# restarts every container independently, so they can start before app's
+# entrypoint has chowned storage/ or run migrate. The service's `command` is
+# what runs once it's there.
+x-worker-service: &worker-service
+  <<: *app-service
+  depends_on:
+    app:
+      condition: service_healthy
+  user: www-data
+  entrypoint:
+    - sh
+    - -c
+    - |
+      until [ -f storage/framework/migrated ]; do
+        echo "waiting for app migration to finish..."
+        sleep 2
+      done
+      exec "$$@"
+    - worker
+
 services:
   app:
     <<: *app-service
@@ -68,59 +93,20 @@ services:
   # Runs the daily episode-check + notification dispatch on Laravel's scheduler
   # so it keeps firing without depending on a host crontab.
   scheduler:
-    <<: *app-service
-    depends_on:
-      app:
-        condition: service_healthy
+    <<: *worker-service
     container_name: tv-tracker-scheduler
-    # Runs as www-data (not the container-default root) so any files it
-    # writes under storage/ stay writable by the php-fpm workers, which are
-    # also www-data.
-    user: www-data
-    entrypoint:
-      - sh
-      - -c
-      - |
-        # depends_on only gates startup order for `docker compose up` — after
-        # a host reboot Docker restarts every container independently, so
-        # this can start before app's entrypoint has chowned storage/ or run
-        # migrate. Poll for app's completion marker instead of trusting it.
-        until [ -f storage/framework/migrated ]; do
-          echo "[scheduler] waiting for app migration to finish..."
-          sleep 2
-        done
-        exec php artisan schedule:work
+    command: ["php", "artisan", "schedule:work"]
 
   # Processes queued jobs (TMDB sync, notification sends) off the request
   # cycle so external API calls never block a user's page load.
   queue:
-    <<: *app-service
-    depends_on:
-      app:
-        condition: service_healthy
+    <<: *worker-service
     container_name: tv-tracker-queue
-    # See scheduler's comment above — same reasoning applies here.
-    user: www-data
-    entrypoint:
-      - sh
-      - -c
-      - |
-        until [ -f storage/framework/migrated ]; do
-          echo "[queue] waiting for app migration to finish..."
-          sleep 2
-        done
-        # --max-time bounds how long one worker process runs before Laravel
-        # restarts it — without it, a worker started before a code deploy (this
-        # volume is a live bind mount of ./src) keeps serving the old code
-        # indefinitely instead of picking up the new build on its next job.
-        exec php artisan queue:work --sleep=3 --tries=3 --max-time=3600
-
-  node:
-    image: node:24.18-alpine
-    working_dir: /app
-    volumes:
-      - ./src:/app
-    restart: "no"
+    # --max-time bounds how long one worker process runs before Laravel
+    # restarts it — without it, a worker started before a code deploy (this
+    # volume is a live bind mount of ./src) keeps serving the old code
+    # indefinitely instead of picking up the new build on its next job.
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
 
   nginx:
     image: nginx:alpine
