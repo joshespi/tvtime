@@ -7,7 +7,7 @@
     <div class="min-w-0 flex-1 flex flex-col gap-2">
         <div class="min-w-0">
             <a href="{{ route('shows.show', $show) }}" class="block font-semibold text-gray-900 dark:text-gray-100 truncate hover:underline">{{ $show->title }}</a>
-            <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+            <p class="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-2">
                 {{ $meta }}
             </p>
         </div>

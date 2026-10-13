@@ -18,6 +18,11 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            // Fills the 16→20 gap so `h-18` (a w-12 poster at 2:3) exists —
+            // Tailwind silently emits nothing for unknown classes.
+            spacing: {
+                18: '4.5rem',
+            },
         },
     },
 
