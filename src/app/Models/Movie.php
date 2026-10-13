@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Casts\JsonList;
 use App\Models\Concerns\HasTmdbPoster;
+use Carbon\CarbonInterface;
 use Database\Factories\MovieFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,9 +27,21 @@ class Movie extends Model
             'synced_at' => 'datetime',
             'release_date' => 'date',
             'vote_average' => 'float',
-            'genres' => 'array',
-            'cast' => 'array',
+            'genres' => JsonList::class,
+            'cast' => JsonList::class,
         ];
+    }
+
+    /** Movies releasing on any day from $from through $to — see Episode::scopeAiringBetween() for why a range. */
+    public function scopeReleasingBetween(Builder $query, CarbonInterface $from, CarbonInterface $to): Builder
+    {
+        return $query->whereBetween('release_date', [$from->copy()->startOfDay(), $to->copy()->endOfDay()]);
+    }
+
+    /** The catalog detail page — movies have no page of their own, unlike shows. */
+    public function detailUrl(): string
+    {
+        return route('catalog.show', ['type' => 'movie', 'tmdbId' => $this->tmdb_id]);
     }
 
     public function userMovies(): HasMany

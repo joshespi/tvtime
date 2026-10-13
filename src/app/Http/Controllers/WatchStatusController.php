@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\TogglesWatched;
 use App\Models\Episode;
 use App\Models\Show;
 use App\Models\UserShow;
@@ -11,35 +12,27 @@ use Illuminate\Http\Request;
 
 class WatchStatusController extends Controller
 {
-    /**
-     * Flips the watched state, unless the request names the state it wants
-     * (`watched=1|0`). The forms always name it: a double-tap or a retried
-     * request then lands on the same state instead of cancelling itself out,
-     * and the Undo button in the status banner can say exactly what to restore.
-     */
+    use TogglesWatched;
+
     public function toggle(Request $request, Episode $episode): RedirectResponse
     {
         $userShow = $this->trackedOrFail($request, $episode);
 
-        $request->validate(['watched' => ['nullable', 'boolean']]);
+        // Only looked up when the request doesn't name the state it wants.
+        $watched = $this->requestedWatched($request, fn () => WatchStatus::query()
+            ->where('user_id', $userShow->user_id)
+            ->where('episode_id', $episode->id)
+            ->whereNotNull('watched_at')
+            ->exists());
 
-        $status = WatchStatus::firstOrNew([
-            'user_id' => $request->user()->id,
-            'episode_id' => $episode->id,
-        ]);
+        $watched ? $userShow->markWatched([$episode->id]) : $userShow->markUnwatched($episode);
 
-        $watched = $request->has('watched')
-            ? $request->boolean('watched')
-            : ! ($status->exists && $status->watched_at);
-
-        $status->watched_at = $watched ? now() : null;
-        $status->save();
-
-        $userShow->refreshFinishedStatus();
-
-        return $this->backToEpisode($episode)
-            ->with('status', "{$userShow->show->title} {$episode->code()} marked ".($watched ? 'watched' : 'unwatched').'.')
-            ->with('undo', ['url' => route('episodes.toggle-watched', $episode), 'watched' => ! $watched]);
+        return $this->withUndo(
+            $this->backToEpisode($episode),
+            "{$userShow->show->title} {$episode->code()}",
+            $watched,
+            route('episodes.toggle-watched', $episode),
+        );
     }
 
     /**
@@ -48,11 +41,8 @@ class WatchStatusController extends Controller
      */
     public function markThrough(Request $request, Episode $episode): RedirectResponse
     {
-        $userShow = $this->trackedOrFail($request, $episode);
-
-        $episode->markWatchedThrough($request->user()->id);
-
-        $userShow->refreshFinishedStatus();
+        $this->trackedOrFail($request, $episode)
+            ->markWatched(Episode::query()->upThrough($episode)->pluck('id'));
 
         return $this->backToEpisode($episode);
     }
@@ -64,17 +54,14 @@ class WatchStatusController extends Controller
      */
     public function markSeason(Request $request, Show $show, int $season): RedirectResponse
     {
-        $userId = $request->user()->id;
-        $userShow = $request->user()->shows()->where('show_id', $show->id)->firstOrFail();
+        $userShow = $request->user()->trackedShow($show) ?? abort(404);
 
         $episodeIds = $show->episodes()
             ->where('season', $season)
-            ->unwatchedAiredFor($userId)
+            ->unwatchedAiredFor($userShow->user_id)
             ->pluck('id');
 
-        WatchStatus::markWatched($userId, $episodeIds);
-
-        $userShow->refreshFinishedStatus();
+        $userShow->markWatched($episodeIds);
 
         return $this->backToAnchor($show->id, "season-{$season}")->with(
             'status',
@@ -114,6 +101,6 @@ class WatchStatusController extends Controller
      */
     private function trackedOrFail(Request $request, Episode $episode): UserShow
     {
-        return $request->user()->shows()->with('show')->where('show_id', $episode->show_id)->first() ?? abort(403);
+        return $request->user()->trackedShow($episode->show) ?? abort(403);
     }
 }

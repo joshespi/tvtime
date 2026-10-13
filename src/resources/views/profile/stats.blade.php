@@ -1,8 +1,4 @@
-<x-app-layout title="Stats">
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">Your Stats</h2>
-    </x-slot>
-
+<x-app-layout title="Stats" heading="Your Stats">
     <div class="py-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 

@@ -93,6 +93,27 @@ class UserShowTest extends TestCase
         $this->assertSame(TrackingStatus::Watching, $userShow->fresh()->status);
     }
 
+    public function test_mark_watched_records_the_watch_and_finishes_a_caught_up_show(): void
+    {
+        [$userShow, $episode] = $this->trackedShowWithAiredEpisode();
+
+        $userShow->markWatched([$episode->id]);
+
+        $this->assertNotNull(WatchStatus::where('user_id', $userShow->user_id)->where('episode_id', $episode->id)->value('watched_at'));
+        $this->assertSame(TrackingStatus::Finished, $userShow->fresh()->status);
+    }
+
+    public function test_mark_unwatched_clears_the_watch_and_unfinishes_the_show(): void
+    {
+        [$userShow, $episode] = $this->trackedShowWithAiredEpisode();
+        $userShow->markWatched([$episode->id]);
+
+        $userShow->markUnwatched($episode);
+
+        $this->assertNull(WatchStatus::where('user_id', $userShow->user_id)->where('episode_id', $episode->id)->value('watched_at'));
+        $this->assertSame(TrackingStatus::Watching, $userShow->fresh()->status);
+    }
+
     /** @return array{0: UserShow, 1: Episode} */
     private function trackedShowWithAiredEpisode(): array
     {

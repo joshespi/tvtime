@@ -1,8 +1,4 @@
 <x-app-layout title="My Shows">
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">My Shows</h2>
-    </x-slot>
-
     <div class="py-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 

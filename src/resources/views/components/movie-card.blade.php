@@ -5,7 +5,7 @@
      dashboard's denser variant — smaller poster, no genres or blurb — because
      Up Next is a "what's on deck" list rather than something to browse. --}}
 @php
-    $detailUrl = route('catalog.show', ['type' => 'movie', 'tmdbId' => $userMovie->movie->tmdb_id]);
+    $detailUrl = $userMovie->movie->detailUrl();
 @endphp
 
 <x-card class="flex items-start gap-4">
@@ -27,7 +27,7 @@
                         · &#9733; {{ number_format($userMovie->movie->vote_average, 1) }}
                     @endif
                     @if ($userMovie->rating)
-                        · Your rating: {{ $userMovie->rating }}/10
+                        · Your rating: {{ $userMovie->rating }}/{{ \App\Support\Rating::MAX }}
                     @endif
                 </span>
                 <x-countdown :date="$userMovie->movie->release_date" />

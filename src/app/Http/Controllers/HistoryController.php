@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\MovieWatch;
 use App\Models\WatchStatus;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -17,29 +16,16 @@ class HistoryController extends Controller
 
     public function __invoke(Request $request): View
     {
-        // Each entry carries an `actions` list rather than one nullable url key
-        // per button, so the two entry types only declare what they actually
-        // offer and the view renders them with one loop.
         // One past the cap, purely to learn whether the cap cut anything off.
         $entries = $this->entries($request, self::LIMIT + 1);
         $truncated = $entries->count() > self::LIMIT;
 
-        $history = $entries->take(self::LIMIT)->map(fn (array $entry) => [
-            ...Arr::except($entry, ['poster', 'link', 'actions']),
-            'poster_url' => $entry['poster'](),
-            'link_url' => $entry['link'](),
-            'actions' => $entry['actions'](),
-        ]);
-
-        return view('history.index', ['history' => $history, 'truncated' => $truncated, 'limit' => self::LIMIT]);
+        return view('history.index', ['history' => $entries->take(self::LIMIT), 'truncated' => $truncated, 'limit' => self::LIMIT]);
     }
 
     /** Every entry, unlimited — the page caps at LIMIT for load time, but an export is a one-off request the user chose to make. */
     public function export(Request $request): StreamedResponse
     {
-        // Only the four CSV columns are read here, so the posters, routes and
-        // action lists the page needs are never built — at export scale that's
-        // three route() calls per row that would be thrown straight away.
         $history = $this->entries($request, null);
 
         return response()->streamDownload(function () use ($history) {
@@ -83,10 +69,9 @@ class HistoryController extends Controller
      * a rewatch is its own entry and re-queueing a movie doesn't erase the
      * fact that it was watched.
      *
-     * The view-only fields (poster, link, actions) are returned as closures
-     * rather than values so the export, which reads none of them, doesn't pay
-     * to build them for every row of an uncapped history. __invoke() swaps each
-     * for its resolved value before handing the rows to the view.
+     * Each entry carries an `actions` list rather than one nullable url key per
+     * button, so the two entry types only declare what they actually offer and
+     * the view renders them with one loop.
      */
     private function entries(Request $request, ?int $limit): Collection
     {
@@ -109,9 +94,9 @@ class HistoryController extends Controller
             'watched_at' => $watch->watched_at,
             'title' => $watch->userMovie->movie->title,
             'subtitle' => $watch->userMovie->movie->release_date?->format('Y'),
-            'poster' => fn () => $watch->userMovie->movie->posterUrl(),
-            'link' => fn () => route('catalog.show', ['type' => 'movie', 'tmdbId' => $watch->userMovie->movie->tmdb_id]),
-            'actions' => fn () => array_values(array_filter([
+            'poster_url' => $watch->userMovie->movie->posterUrl(),
+            'link_url' => $watch->userMovie->movie->detailUrl(),
+            'actions' => array_values(array_filter([
                 $watch->userMovie->isFinished()
                     ? ['label' => 'Watch again', 'url' => route('movies.watch-again', $watch->userMovie), 'variant' => 'primary']
                     : null,
@@ -124,9 +109,9 @@ class HistoryController extends Controller
             'watched_at' => $watchStatus->watched_at,
             'title' => $watchStatus->episode->show->title,
             'subtitle' => $watchStatus->episode->label(),
-            'poster' => fn () => $watchStatus->episode->show->posterUrl(),
-            'link' => fn () => route('shows.show', $watchStatus->episode->show),
-            'actions' => fn () => [
+            'poster_url' => $watchStatus->episode->show->posterUrl(),
+            'link_url' => route('shows.show', $watchStatus->episode->show),
+            'actions' => [
                 ['label' => 'Mark unwatched', 'url' => route('episodes.toggle-watched', $watchStatus->episode), 'fields' => ['watched' => 0]],
             ],
         ]);

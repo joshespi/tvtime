@@ -58,7 +58,7 @@ class UpNextController extends Controller
             ->inWatchlist()
             ->with('movie')
             ->withCount('watches')
-            ->orderByDesc('created_at')
+            ->latest()
             ->get();
 
         return view('up-next', [

@@ -15,9 +15,7 @@ use App\Http\Controllers\UpNextController;
 use App\Http\Controllers\WatchStatusController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::view('/', 'welcome');
 
 Route::get('/manifest.webmanifest', function () {
     return response()->view('manifest')->header('Content-Type', 'application/manifest+json');

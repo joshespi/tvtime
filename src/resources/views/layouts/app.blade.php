@@ -8,13 +8,15 @@
             @include('layouts.navigation')
 
             <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                    @isset($header)
                         {{ $header }}
-                    </div>
-                </header>
-            @endisset
+                    @else
+                        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">{{ $heading ?? $title }}</h2>
+                    @endisset
+                </div>
+            </header>
 
             <!-- Page Content -->
             <main class="flex-1 min-w-0">

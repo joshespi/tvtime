@@ -1,8 +1,4 @@
 <x-app-layout title="Calendar">
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">Calendar</h2>
-    </x-slot>
-
     <div class="py-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
@@ -51,7 +47,7 @@
                                 </a>
                             @endforeach
                             @foreach ($day['movies'] as $movie)
-                                <a href="{{ route('catalog.show', ['type' => 'movie', 'tmdbId' => $movie->tmdb_id]) }}"
+                                <a href="{{ $movie->detailUrl() }}"
                                    class="block text-sm px-2 py-1 rounded hover:underline {{ \App\Support\MediaTypeStyle::classes('movie') }}">
                                     {{ $movie->title }}
                                 </a>
@@ -86,7 +82,7 @@
                                         </a>
                                     @endforeach
                                     @foreach ($day['movies'] as $movie)
-                                        <a href="{{ route('catalog.show', ['type' => 'movie', 'tmdbId' => $movie->tmdb_id]) }}"
+                                        <a href="{{ $movie->detailUrl() }}"
                                            class="block truncate text-[11px] leading-tight px-1 py-0.5 rounded hover:underline {{ \App\Support\MediaTypeStyle::classes('movie') }}"
                                            title="{{ $movie->title }}">
                                             {{ $movie->title }}

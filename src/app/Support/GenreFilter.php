@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Closure;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 /**
@@ -12,6 +13,21 @@ use Illuminate\Support\Collection;
  */
 class GenreFilter
 {
+    /**
+     * Applies the request's ?genre= to the items. Options are read off the full
+     * set, before filtering, so picking a genre never removes it from its own
+     * dropdown — and they're what the requested genre is validated against.
+     *
+     * @return array{0: Collection, 1: ?string, 2: array<string, string>} [filtered items, genre, options]
+     */
+    public static function fromRequest(Request $request, Collection $items, Closure $genresAccessor): array
+    {
+        $options = static::options($items, $genresAccessor);
+        $genre = static::resolve($request->string('genre')->toString(), $options);
+
+        return [static::apply($items, $genre, $genresAccessor), $genre, $options];
+    }
+
     /**
      * The genre to filter by, or null for "no filter".
      *

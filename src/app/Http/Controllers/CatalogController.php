@@ -93,9 +93,9 @@ class CatalogController extends Controller
             'overview' => $movie->overview,
             'status' => $movie->status,
             'vote_average' => $movie->vote_average,
-            'genres' => $movie->genres ?? [],
+            'genres' => $movie->genres,
             'release_date' => $movie->release_date?->toDateString(),
-            'cast' => $movie->cast ?? [],
+            'cast' => $movie->cast,
             'trailer_key' => $movie->trailer_key,
         ];
     }

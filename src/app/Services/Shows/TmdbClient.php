@@ -7,6 +7,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Pool;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -38,11 +39,9 @@ class TmdbClient
 
     /**
      * IMDB ids already resolved this request/command run, keyed by TMDB person
-     * id — avoids re-fetching a recurring actor's id once per title they
-     * appear in (e.g. during BackfillCastAndTrailer's library-wide run).
-     * Only actually shared across callers because TmdbClient is bound as a
-     * singleton in AppServiceProvider — see that binding before assuming this
-     * cache spans more than one instance.
+     * id (null for none or a failed lookup) — the layer in front of the app
+     * cache in fetchImdbIds(). Only shared across callers because TmdbClient is
+     * bound as a singleton in AppServiceProvider.
      */
     private array $imdbIdCache = [];
 
@@ -83,7 +82,7 @@ class TmdbClient
     public function searchMulti(string $query): array
     {
         try {
-            $response = $this->request()->get('/search/multi', ['query' => $query, 'api_key' => $this->key]);
+            $response = $this->request()->get('/search/multi', ['query' => $query]);
         } catch (ConnectionException $e) {
             Log::warning('TMDB multi-search failed to connect', ['query' => $query, 'message' => $e->getMessage()]);
 
@@ -123,8 +122,7 @@ class TmdbClient
         }
 
         $responses = Http::pool(fn ($pool) => collect($seeds)
-            ->map(fn (array $seed) => $this->pooledClient($pool)
-                ->get($this->recommendationsPath($seed), ['api_key' => $this->key]))
+            ->map(fn (array $seed) => $this->pooledClient($pool)->get($this->recommendationsPath($seed)))
             ->all());
 
         return collect($seeds)
@@ -151,6 +149,11 @@ class TmdbClient
         return $seed['type'] === 'movie'
             ? "/movie/{$seed['id']}/recommendations"
             : "/tv/{$seed['id']}/recommendations";
+    }
+
+    private static function imdbCacheKey(int $personId): string
+    {
+        return "tmdb:person-imdb:{$personId}";
     }
 
     /**
@@ -284,17 +287,53 @@ class TmdbClient
             ->reject(fn (int $id) => array_key_exists($id, $this->imdbIdCache))
             ->values();
 
+        // A person's IMDb id never changes, so a found one is also kept in the
+        // app cache for good — a recurring actor costs one request ever, not one
+        // per title. '' records "TMDB has none" (a hit, not a miss), but only for
+        // a month: TMDB fills ids in for newer actors over time. Failed lookups
+        // only reach the in-memory cache, so they're retried next run.
+        if ($toFetch->isNotEmpty()) {
+            $cached = Cache::many($toFetch->map(fn (int $id) => self::imdbCacheKey($id))->all());
+
+            $toFetch = $toFetch->reject(function (int $id) use ($cached) {
+                $hit = $cached[self::imdbCacheKey($id)] ?? null;
+
+                if ($hit !== null) {
+                    $this->imdbIdCache[$id] = $hit ?: null;
+                }
+
+                return $hit !== null;
+            })->values();
+        }
+
         if ($toFetch->isNotEmpty()) {
             $responses = Http::pool(fn ($pool) => $toFetch
-                ->map(fn (int $personId) => $this->pooledClient($pool)->get("/person/{$personId}/external_ids", ['api_key' => $this->key]))
+                ->map(fn (int $personId) => $this->pooledClient($pool)->get("/person/{$personId}/external_ids"))
                 ->all());
+
+            $found = [];
+            $none = [];
 
             foreach ($toFetch as $index => $personId) {
                 $response = $responses[$index] ?? null;
-
-                $this->imdbIdCache[$personId] = $response instanceof Response && $response->successful()
-                    ? ($response->json('imdb_id') ?: null)
+                $imdbId = $response instanceof Response && $response->successful()
+                    ? ($response->json('imdb_id') ?: '')
                     : null;
+
+                $this->imdbIdCache[$personId] = $imdbId ?: null;
+
+                if ($imdbId === '') {
+                    $none[self::imdbCacheKey($personId)] = '';
+                } elseif ($imdbId !== null) {
+                    $found[self::imdbCacheKey($personId)] = $imdbId;
+                }
+            }
+
+            if ($found !== []) {
+                Cache::putMany($found); // no TTL: kept forever
+            }
+            if ($none !== []) {
+                Cache::putMany($none, now()->addMonth());
             }
         }
 
@@ -303,16 +342,10 @@ class TmdbClient
             ->all();
     }
 
-    /**
-     * Shared connection config for a pooled request — same timeouts as request(),
-     * applied to a pool member instead of a standalone client. Pass $key to name
-     * the response (Pool::as); omit it for a positionally-indexed one.
-     */
+    /** A pool member configured like request(). Pass $key to name the response (Pool::as); omit it for a positionally-indexed one. */
     private function pooledClient(Pool $pool, int|string|null $key = null): PendingRequest
     {
-        $request = $key === null ? $pool->newRequest() : $pool->as((string) $key);
-
-        return $request->baseUrl($this->baseUrl)->acceptJson()->connectTimeout(2)->timeout(5);
+        return $this->configure($key === null ? $pool->newRequest() : $pool->as((string) $key));
     }
 
     /**
@@ -359,8 +392,7 @@ class TmdbClient
         // $numberOfSeasons is TMDB-supplied data, not a value this app controls.
         $seasons = range(1, min($numberOfSeasons, self::MAX_SEASONS_PER_FETCH));
         $responses = Http::pool(fn ($pool) => collect($seasons)
-            ->map(fn (int $season) => $this->pooledClient($pool, $season)
-                ->get("/tv/{$id}/season/{$season}", ['api_key' => $this->key]))
+            ->map(fn (int $season) => $this->pooledClient($pool, $season)->get("/tv/{$id}/season/{$season}"))
             ->all());
 
         $episodes = [];
@@ -388,27 +420,32 @@ class TmdbClient
 
     /**
      * @param  array<int, string>  $append
-     * @return array{api_key: string, append_to_response?: string}
+     * @return array{append_to_response?: string}
      */
     private function params(array $append): array
     {
-        $params = ['api_key' => $this->key];
-
-        if ($append !== []) {
-            $params['append_to_response'] = implode(',', $append);
-        }
-
-        return $params;
+        return $append === [] ? [] : ['append_to_response' => implode(',', $append)];
     }
 
-    private function request()
+    private function request(): PendingRequest
     {
-        // Timeouts matter here: catalog search runs inline during a page render,
-        // so an unresponsive provider would otherwise hold a php-fpm worker open
-        // for the default 30s.
-        return Http::baseUrl($this->baseUrl)
+        return $this->configure(Http::createPendingRequest());
+    }
+
+    /**
+     * The one configuration every TMDB call gets, standalone or pooled — the
+     * api_key rides along as a default query parameter so no call site can
+     * forget it. Timeouts matter: catalog search runs inline during a page
+     * render, so an unresponsive provider would otherwise hold a php-fpm worker
+     * open for the default 30s.
+     */
+    private function configure(PendingRequest $request): PendingRequest
+    {
+        return $request
+            ->baseUrl($this->baseUrl)
             ->acceptJson()
             ->connectTimeout(2)
-            ->timeout(5);
+            ->timeout(5)
+            ->withQueryParameters(['api_key' => $this->key]);
     }
 }

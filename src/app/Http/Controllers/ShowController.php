@@ -30,15 +30,9 @@ class ShowController extends Controller
             ->with('show.nextUpcomingEpisode')
             ->get();
 
-        $genresOf = fn (UserShow $userShow) => $userShow->show->genres ?? [];
-
-        // Options are read off the full set, before filtering, so picking a
-        // genre never removes it from its own dropdown — and they're what the
-        // requested genre is validated against.
-        $genreOptions = GenreFilter::options($tracked, $genresOf);
-        $genre = GenreFilter::resolve($request->string('genre')->toString(), $genreOptions);
-
-        $tracked = GenreFilter::apply($tracked, $genre, $genresOf);
+        [$tracked, $genre, $genreOptions] = GenreFilter::fromRequest(
+            $request, $tracked, fn (UserShow $userShow) => $userShow->show->genres,
+        );
 
         $tracked = WatchlistSort::apply(
             $tracked,
@@ -72,7 +66,8 @@ class ShowController extends Controller
 
     public function show(Request $request, Show $show): View
     {
-        $userShow = $this->trackedOrFail($request, $show->id);
+        // A read, so 404 rather than confirm the show id exists (see trackedShow()).
+        $userShow = $request->user()->trackedShow($show) ?? abort(404);
 
         $episodes = $show->episodesWithWatchState($request->user()->id);
 
@@ -125,19 +120,5 @@ class ShowController extends Controller
         $userShow->delete();
 
         return redirect()->route('shows.index')->with('status', 'Show removed from your list.');
-    }
-
-    /**
-     * The current user's tracking record for a show, 404ing if they don't track
-     * it — the read path's ownership check. The write actions instead resolve a
-     * UserShow by route-model binding and go through UserShowPolicy, so a show
-     * belonging to someone else is a 403 there and a 404 here: reads shouldn't
-     * confirm that an id exists, writes should say plainly that they're refused.
-     *
-     * with('show') because the status picker labels itself from the show title.
-     */
-    private function trackedOrFail(Request $request, int $showId): UserShow
-    {
-        return $request->user()->shows()->with('show')->where('show_id', $showId)->firstOrFail();
     }
 }

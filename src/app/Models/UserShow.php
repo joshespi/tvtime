@@ -47,6 +47,30 @@ class UserShow extends Model
     }
 
     /**
+     * Every watch-state write for this show goes through these two, so the
+     * Watching/Finished status is re-derived on each one. (WatchStatus::markWatched()
+     * upserts, which fires no model events, so an observer couldn't do this.)
+     *
+     * @param  iterable<int>  $episodeIds
+     */
+    public function markWatched(iterable $episodeIds): void
+    {
+        WatchStatus::markWatched($this->user_id, $episodeIds);
+
+        $this->refreshFinishedStatus();
+    }
+
+    public function markUnwatched(Episode $episode): void
+    {
+        WatchStatus::query()
+            ->where('user_id', $this->user_id)
+            ->where('episode_id', $episode->id)
+            ->update(['watched_at' => null]);
+
+        $this->refreshFinishedStatus();
+    }
+
+    /**
      * Moves the show between Watching and Finished to match whether anything
      * aired is still unwatched — so the Finished shelf fills itself when the
      * last episode is marked watched, and empties again when a new one airs.

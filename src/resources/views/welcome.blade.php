@@ -70,7 +70,7 @@
             <!-- Features -->
             <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 rounded-xl p-6">
+                    <x-card padding="p-6" class="rounded-xl">
                         <div class="h-10 w-10 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -80,9 +80,9 @@
                         <p class="mt-1.5 text-sm text-gray-600 dark:text-gray-400">
                             Search and follow any show, mark episodes and whole seasons watched, and pick up right where you left off.
                         </p>
-                    </div>
+                    </x-card>
 
-                    <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 rounded-xl p-6">
+                    <x-card padding="p-6" class="rounded-xl">
                         <div class="h-10 w-10 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
@@ -92,9 +92,9 @@
                         <p class="mt-1.5 text-sm text-gray-600 dark:text-gray-400">
                             A daily check keeps your episode data fresh and emails you when something you follow airs.
                         </p>
-                    </div>
+                    </x-card>
 
-                    <div class="bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 rounded-xl p-6">
+                    <x-card padding="p-6" class="rounded-xl">
                         <div class="h-10 w-10 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
@@ -105,7 +105,7 @@
                             No ads, no analytics, no third parties. Prefer to run your own copy?
                             <a href="https://github.com/joshespi/tvtime" rel="noopener" class="text-indigo-600 dark:text-indigo-400 hover:underline">The code is on GitHub</a>.
                         </p>
-                    </div>
+                    </x-card>
                 </div>
             </section>
         </main>

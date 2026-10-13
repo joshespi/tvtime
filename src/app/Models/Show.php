@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\JsonList;
 use App\Models\Concerns\HasTmdbPoster;
 use Database\Factories\ShowFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,8 +28,8 @@ class Show extends Model
             'synced_at' => 'datetime',
             'first_air_date' => 'date',
             'vote_average' => 'float',
-            'genres' => 'array',
-            'cast' => 'array',
+            'genres' => JsonList::class,
+            'cast' => JsonList::class,
         ];
     }
 

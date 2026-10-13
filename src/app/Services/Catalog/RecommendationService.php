@@ -35,11 +35,12 @@ class RecommendationService
             return [];
         }
 
-        // Only tmdb_id is ever read off the related records, so the wide columns
+        // One join per type for just the columns read here — tmdb_id, plus the
+        // show status that picks the seeds — so the wide catalog columns
         // (overview, genres JSON, posters) stay in the database.
-        $showRows = $user->shows()->with('show:id,tmdb_id')->get();
-        $showIds = $this->tmdbIds($showRows, 'show');
-        $movieIds = $this->tmdbIds($user->movies()->with('movie:id,tmdb_id')->get(), 'movie');
+        $showRows = $user->shows()->join('shows', 'shows.id', '=', 'user_shows.show_id')->get(['shows.tmdb_id', 'user_shows.status']);
+        $showIds = $this->tmdbIds($showRows);
+        $movieIds = $this->tmdbIds($user->movies()->join('movies', 'movies.id', '=', 'user_movies.movie_id')->get(['movies.tmdb_id']));
 
         // Everything tracked or dismissed is filtered out of the results, paused
         // and dropped shows included — those were deliberate no's, so they'd be
@@ -53,7 +54,7 @@ class RecommendationService
             'movie' => $movieIds->concat($dismissed->get('movie', collect())->pluck('tmdb_id'))->all(),
         ];
 
-        $seedShowIds = $this->tmdbIds($showRows->filter(fn ($userShow) => $userShow->status->isActive()), 'show');
+        $seedShowIds = $this->tmdbIds($showRows->filter(fn ($userShow) => $userShow->status->isActive()));
 
         $seeds = $this->seeds($seedShowIds, 'show')
             ->concat($this->seeds($movieIds, 'movie'))
@@ -80,9 +81,9 @@ class RecommendationService
      * @param  Collection<int, Model>  $rows
      * @return Collection<int, string>
      */
-    private function tmdbIds(Collection $rows, string $relation): Collection
+    private function tmdbIds(Collection $rows): Collection
     {
-        return $rows->pluck("{$relation}.tmdb_id")
+        return $rows->pluck('tmdb_id')
             ->filter()
             ->map(fn ($id) => (string) $id)
             ->unique()

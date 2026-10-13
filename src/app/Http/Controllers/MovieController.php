@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\SavesRatings;
+use App\Http\Controllers\Concerns\TogglesWatched;
 use App\Models\MovieWatch;
 use App\Models\UserMovie;
 use App\Services\Catalog\CatalogSearchService;
@@ -16,7 +17,7 @@ use Illuminate\View\View;
 
 class MovieController extends Controller
 {
-    use SavesRatings;
+    use SavesRatings, TogglesWatched;
 
     public function __construct(private readonly CatalogSearchService $catalog) {}
 
@@ -28,15 +29,9 @@ class MovieController extends Controller
         // loading every watch row behind it.
         $movies = $request->user()->movies()->with('movie')->withCount('watches')->get();
 
-        $genresOf = fn (UserMovie $userMovie) => $userMovie->movie->genres ?? [];
-
-        // Options are read off the full set, before filtering, so picking a
-        // genre never removes it from its own dropdown — and they're what the
-        // requested genre is validated against.
-        $genreOptions = GenreFilter::options($movies, $genresOf);
-        $genre = GenreFilter::resolve($request->string('genre')->toString(), $genreOptions);
-
-        $movies = GenreFilter::apply($movies, $genre, $genresOf);
+        [$movies, $genre, $genreOptions] = GenreFilter::fromRequest(
+            $request, $movies, fn (UserMovie $userMovie) => $userMovie->movie->genres,
+        );
 
         [$finished, $watchlist] = $movies->partition(fn (UserMovie $userMovie) => $userMovie->isFinished());
 
@@ -59,26 +54,18 @@ class MovieController extends Controller
         ]);
     }
 
-    /**
-     * Flips watched/unwatched, unless the request names the state it wants
-     * (`watched=1|0`) — then a repeated request is a no-op rather than undoing
-     * the first one, and the Undo button can restore the exact prior state.
-     */
+    /** A repeated explicit request is a no-op here, so it can't log a second viewing. */
     public function toggleWatched(Request $request, UserMovie $userMovie): RedirectResponse
     {
         Gate::authorize('update', $userMovie);
 
-        $request->validate(['watched' => ['nullable', 'boolean']]);
-
-        $watched = $request->has('watched') ? $request->boolean('watched') : ! $userMovie->isFinished();
+        $watched = $this->requestedWatched($request, $userMovie->isFinished());
 
         if ($watched !== $userMovie->isFinished()) {
             $watched ? $userMovie->markWatched() : $userMovie->markUnwatched();
         }
 
-        return back()
-            ->with('status', "\"{$userMovie->movie->title}\" marked ".($watched ? 'watched' : 'unwatched').'.')
-            ->with('undo', ['url' => route('movies.toggle-watched', $userMovie), 'watched' => ! $watched]);
+        return $this->withUndo(back(), "\"{$userMovie->movie->title}\"", $watched, route('movies.toggle-watched', $userMovie));
     }
 
     /** Puts a finished movie back on the watchlist without losing that it was seen. */

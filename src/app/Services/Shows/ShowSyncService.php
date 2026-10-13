@@ -86,7 +86,13 @@ class ShowSyncService
             return;
         }
 
-        Episode::upsert(
+        // toBase(): Eloquent's upsert() adds updated_at to the update columns,
+        // which changes on every run and so forces MariaDB to rewrite every
+        // episode of every show daily. Without it an unchanged row is skipped;
+        // updated_at just keeps its insert time, and nothing reads it.
+        $now = now();
+
+        Episode::query()->toBase()->upsert(
             array_map(fn (array $episode) => [
                 'show_id' => $show->id,
                 'season' => $episode['season'],
@@ -94,6 +100,8 @@ class ShowSyncService
                 'title' => $episode['title'],
                 'air_date' => $episode['air_date'],
                 'tmdb_id' => $episode['external_id'],
+                'created_at' => $now,
+                'updated_at' => $now,
             ], $episodes),
             ['show_id', 'season', 'episode_number'],
             ['title', 'air_date', 'tmdb_id'],

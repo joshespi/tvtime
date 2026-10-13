@@ -35,19 +35,21 @@ class Episode extends Model
     }
 
     /**
-     * Episodes airing on a given day.
+     * Episodes airing on any day from $from through $to.
      *
-     * A range rather than whereDate(): whereDate() wraps the column in DATE(),
-     * which is non-sargable and defeats the air_date index. The range form also
-     * works both for MariaDB's `date` column and for the 'Y-m-d 00:00:00'
-     * strings the `date` cast writes under SQLite in tests.
+     * A start/end-of-day range rather than whereDate(): whereDate() wraps the
+     * column in DATE(), which is non-sargable and defeats the air_date index.
+     * The range form also works both for MariaDB's `date` column and for the
+     * 'Y-m-d 00:00:00' strings the `date` cast writes under SQLite in tests.
      */
+    public function scopeAiringBetween(Builder $query, CarbonInterface $from, CarbonInterface $to): Builder
+    {
+        return $query->whereBetween('air_date', [$from->copy()->startOfDay(), $to->copy()->endOfDay()]);
+    }
+
     public function scopeAiringOn(Builder $query, CarbonInterface $day): Builder
     {
-        return $query->whereBetween('air_date', [
-            $day->copy()->startOfDay(),
-            $day->copy()->endOfDay(),
-        ]);
+        return $query->airingBetween($day, $day);
     }
 
     /** Episodes that have already aired — the inverse of scopeUpcoming(). */
@@ -79,23 +81,20 @@ class Episode extends Model
     }
 
     /**
-     * Marks this episode and every earlier one in the same show (spanning
-     * prior seasons) as watched — for clearing a gap of earlier unwatched episodes.
+     * The given episode and every earlier one in the same show, spanning prior
+     * seasons — for clearing a gap of earlier unwatched episodes.
      */
-    public function markWatchedThrough(int $userId): void
+    public function scopeUpThrough(Builder $query, Episode $episode): Builder
     {
-        $episodeIds = static::query()
-            ->where('show_id', $this->show_id)
-            ->where(function (Builder $query) {
-                $query->where('season', '<', $this->season)
-                    ->orWhere(function (Builder $query) {
-                        $query->where('season', $this->season)
-                            ->where('episode_number', '<=', $this->episode_number);
+        return $query
+            ->where('show_id', $episode->show_id)
+            ->where(function (Builder $query) use ($episode) {
+                $query->where('season', '<', $episode->season)
+                    ->orWhere(function (Builder $query) use ($episode) {
+                        $query->where('season', $episode->season)
+                            ->where('episode_number', '<=', $episode->episode_number);
                     });
-            })
-            ->pluck('id');
-
-        WatchStatus::markWatched($userId, $episodeIds);
+            });
     }
 
     /** Has a known air date that is today or earlier — the per-row twin of scopeAired(). */

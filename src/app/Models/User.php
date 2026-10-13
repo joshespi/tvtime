@@ -39,6 +39,18 @@ class User extends Authenticatable
         return $this->hasMany(UserShow::class);
     }
 
+    /**
+     * This user's tracking record for a show, or null if they don't track it —
+     * the ownership check for routes keyed by a Show or Episode rather than a
+     * UserShow. Callers pick the failure: reads 404 (don't confirm the id
+     * exists), writes 403. `show` is set from the model passed in, since callers
+     * label things by its title.
+     */
+    public function trackedShow(Show $show): ?UserShow
+    {
+        return $this->shows()->where('show_id', $show->id)->first()?->setRelation('show', $show);
+    }
+
     public function movies(): HasMany
     {
         return $this->hasMany(UserMovie::class);

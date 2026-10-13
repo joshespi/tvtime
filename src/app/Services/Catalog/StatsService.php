@@ -30,9 +30,9 @@ class StatsService
         // it's just intent. Only the genres column is selected; overviews and
         // posters stay put.
         $showGenres = $user->shows()->with('show:id,genres')->get()
-            ->flatMap(fn ($userShow) => $userShow->show->genres ?? []);
+            ->flatMap(fn ($userShow) => $userShow->show->genres);
         $movieGenres = $user->movies()->whereHas('watches')->with('movie:id,genres')->get()
-            ->flatMap(fn ($userMovie) => $userMovie->movie->genres ?? []);
+            ->flatMap(fn ($userMovie) => $userMovie->movie->genres);
 
         return [
             'episodesWatchedTotal' => $episodeCounts['total'],

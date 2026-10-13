@@ -77,7 +77,7 @@ class EpisodeTest extends TestCase
         $this->assertTrue($results->contains('id', $episode->id));
     }
 
-    public function test_mark_watched_through_marks_earlier_episodes_in_the_same_season(): void
+    public function test_up_through_marks_earlier_episodes_in_the_same_season(): void
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
@@ -86,14 +86,14 @@ class EpisodeTest extends TestCase
         $e2 = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 2]);
         $e3 = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 3]);
 
-        $e2->markWatchedThrough($user->id);
+        WatchStatus::markWatched($user->id, Episode::query()->upThrough($e2)->pluck('id'));
 
         $this->assertDatabaseHas('watch_status', ['user_id' => $user->id, 'episode_id' => $e1->id]);
         $this->assertDatabaseHas('watch_status', ['user_id' => $user->id, 'episode_id' => $e2->id]);
         $this->assertDatabaseMissing('watch_status', ['user_id' => $user->id, 'episode_id' => $e3->id]);
     }
 
-    public function test_mark_watched_through_spans_prior_seasons(): void
+    public function test_up_through_spans_prior_seasons(): void
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
@@ -103,7 +103,7 @@ class EpisodeTest extends TestCase
         $s2e2 = Episode::factory()->create(['show_id' => $show->id, 'season' => 2, 'episode_number' => 2]);
         $s2e3 = Episode::factory()->create(['show_id' => $show->id, 'season' => 2, 'episode_number' => 3]);
 
-        $s2e2->markWatchedThrough($user->id);
+        WatchStatus::markWatched($user->id, Episode::query()->upThrough($s2e2)->pluck('id'));
 
         $this->assertDatabaseHas('watch_status', ['user_id' => $user->id, 'episode_id' => $s1e5->id]);
         $this->assertDatabaseHas('watch_status', ['user_id' => $user->id, 'episode_id' => $s2e1->id]);
@@ -111,7 +111,7 @@ class EpisodeTest extends TestCase
         $this->assertDatabaseMissing('watch_status', ['user_id' => $user->id, 'episode_id' => $s2e3->id]);
     }
 
-    public function test_mark_watched_through_does_not_touch_other_shows(): void
+    public function test_up_through_does_not_touch_other_shows(): void
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
@@ -120,19 +120,19 @@ class EpisodeTest extends TestCase
         $episode = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1]);
         $otherEpisode = Episode::factory()->create(['show_id' => $otherShow->id, 'season' => 1, 'episode_number' => 1]);
 
-        $episode->markWatchedThrough($user->id);
+        WatchStatus::markWatched($user->id, Episode::query()->upThrough($episode)->pluck('id'));
 
         $this->assertDatabaseMissing('watch_status', ['user_id' => $user->id, 'episode_id' => $otherEpisode->id]);
     }
 
-    public function test_mark_watched_through_is_idempotent(): void
+    public function test_up_through_is_idempotent(): void
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
         $episode = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1]);
 
-        $episode->markWatchedThrough($user->id);
-        $episode->markWatchedThrough($user->id);
+        WatchStatus::markWatched($user->id, Episode::query()->upThrough($episode)->pluck('id'));
+        WatchStatus::markWatched($user->id, Episode::query()->upThrough($episode)->pluck('id'));
 
         $this->assertDatabaseCount('watch_status', 1);
     }

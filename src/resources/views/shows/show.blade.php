@@ -1,8 +1,4 @@
 <x-app-layout :title="$show->title">
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">{{ $show->title }}</h2>
-    </x-slot>
-
     <div class="py-10">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
@@ -12,7 +8,7 @@
 
             <x-title-summary :poster-url="$show->posterUrl('w342')" :title="$show->title"
                              :date="$show->first_air_date" :status="$show->status"
-                             :vote-average="$show->vote_average" :genres="$show->genres ?? []"
+                             :vote-average="$show->vote_average" :genres="$show->genres"
                              :overview="$show->overview">
                 <x-tracking-status-select :user-show="$userShow" />
                 <x-trailer-link :trailer-key="$show->trailer_key" />
@@ -25,7 +21,7 @@
                 <x-rating-form :rating="$userShow->rating" :note="$userShow->note" :action="route('shows.update-rating', $userShow)" />
             </x-card>
 
-            <x-cast-list :cast="$show->cast ?? []" />
+            <x-cast-list :cast="$show->cast" />
 
             @forelse ($seasons as $season => $episodes)
                 @php

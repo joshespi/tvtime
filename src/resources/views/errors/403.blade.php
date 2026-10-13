@@ -4,5 +4,5 @@
 @section('heading', 'Not allowed')
 @section('message', "You don't have access to that.")
 @section('actions')
-<a href="{{ url('/dashboard') }}" class="{{ \App\Support\ButtonStyle::classes('primary') }}">Go to dashboard</a>
+<x-action-button variant="primary" href="{{ url('/dashboard') }}">Go to dashboard</x-action-button>
 @endsection

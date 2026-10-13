@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Episode;
 use App\Models\Movie;
+use Carbon\CarbonInterface;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
@@ -18,8 +20,6 @@ class CalendarController extends Controller
      */
     public function __invoke(Request $request): View
     {
-        $userId = $request->user()->id;
-
         $monthParam = $request->string('month')->toString();
         $anchor = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $monthParam)
             ? Carbon::createFromFormat('Y-m-d', "{$monthParam}-01")->startOfMonth()
@@ -30,50 +30,38 @@ class CalendarController extends Controller
         $end = $anchor->copy()->endOfMonth();
 
         // The grid shows a few days from the adjacent months to fill out whole
-        // weeks (see the loop below) — computed first so the queries can cover
-        // that same range instead of just the calendar month, which silently
-        // dropped anything airing on a leading/trailing grid day.
+        // weeks — computed first so the queries can cover that same range
+        // instead of just the calendar month, which silently dropped anything
+        // airing on a leading/trailing grid day.
         $gridStart = $anchor->copy()->startOfWeek(Carbon::SUNDAY);
         $gridEnd = $end->copy()->endOfWeek(Carbon::SUNDAY);
 
+        // IN over the user's own ids rather than whereHas() through show.userShows,
+        // so the episode query stays an index range on (air_date, show_id) instead
+        // of a nested EXISTS per catalog episode.
         $episodesByDate = Episode::query()
-            ->whereBetween('air_date', [$gridStart->toDateString(), $gridEnd->toDateString()])
-            ->whereHas('show.userShows', fn ($query) => $query->where('user_id', $userId)->active())
+            ->airingBetween($gridStart, $gridEnd)
+            ->whereIn('show_id', $request->user()->shows()->active()->select('show_id'))
             ->with('show')
             ->get()
             ->groupBy(fn (Episode $episode) => $episode->air_date->toDateString());
 
         $moviesByDate = Movie::query()
-            ->whereBetween('release_date', [$gridStart->toDateString(), $gridEnd->toDateString()])
-            ->whereHas('userMovies', fn ($query) => $query->where('user_id', $userId))
+            ->releasingBetween($gridStart, $gridEnd)
+            ->whereIn('id', $request->user()->movies()->select('movie_id'))
             ->get()
             ->groupBy(fn (Movie $movie) => $movie->release_date->toDateString());
 
-        $weeks = [];
-        $cursor = $gridStart->copy();
-
-        while ($cursor->lte($gridEnd)) {
-            $week = [];
-
-            for ($i = 0; $i < 7; $i++) {
-                $key = $cursor->toDateString();
-
-                $week[] = [
-                    'date' => $cursor->copy(),
-                    'inMonth' => $cursor->month === $anchor->month,
-                    'isToday' => $cursor->isToday(),
-                    'episodes' => $episodesByDate->get($key, collect()),
-                    'movies' => $moviesByDate->get($key, collect()),
-                ];
-
-                $cursor->addDay();
-            }
-
-            $weeks[] = $week;
-        }
+        $days = collect(CarbonPeriod::create($gridStart, $gridEnd))->map(fn (CarbonInterface $day) => [
+            'date' => $day,
+            'inMonth' => $day->month === $anchor->month,
+            'isToday' => $day->isToday(),
+            'episodes' => $episodesByDate->get($day->toDateString(), collect()),
+            'movies' => $moviesByDate->get($day->toDateString(), collect()),
+        ]);
 
         return view('calendar.index', [
-            'weeks' => $weeks,
+            'weeks' => $days->chunk(7)->map->values(),
             'month' => $anchor,
             'prevMonth' => $anchor->copy()->subMonthNoOverflow()->format('Y-m'),
             'nextMonth' => $anchor->copy()->addMonthNoOverflow()->format('Y-m'),

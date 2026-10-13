@@ -38,9 +38,9 @@ class CatalogSearchService
      *
      * @return array{query: string, results: array<int, array>}
      */
-    public function forRequest(Request $request, string $param = 'q'): array
+    public function forRequest(Request $request): array
     {
-        $query = $request->string($param)->trim()->toString();
+        $query = $request->string('q')->trim()->toString();
 
         return [
             'query' => $query,

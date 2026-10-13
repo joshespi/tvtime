@@ -1,8 +1,6 @@
 @props(['userShow'])
 
-{{-- Shared by all three shelves on /shows (Tracking, Finished, Not Tracking).
-     The shelf a card sits on carries how closely the show is being followed, so
-     the card itself doesn't restate the status. --}}
+{{-- Shared by all three shelves on /shows (Tracking, Finished, Not Tracking). --}}
 <x-card class="flex items-start gap-4">
     <x-show-poster :url="$userShow->show->posterUrl()" :alt="$userShow->show->title"
                    :href="route('shows.show', $userShow->show)" />
@@ -18,7 +16,7 @@
                     · &#9733; {{ number_format($userShow->show->vote_average, 1) }}
                 @endif
                 @if ($userShow->rating)
-                    · Your rating: {{ $userShow->rating }}/10
+                    · Your rating: {{ $userShow->rating }}/{{ \App\Support\Rating::MAX }}
                 @endif
             </p>
             @if (! empty($userShow->show->genres))
