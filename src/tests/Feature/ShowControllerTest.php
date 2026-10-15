@@ -6,6 +6,7 @@ use App\Models\Episode;
 use App\Models\Show;
 use App\Models\User;
 use App\Models\UserShow;
+use App\Models\WatchStatus;
 use App\Support\TrackingStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -33,6 +34,17 @@ class ShowControllerTest extends TestCase
         $response->assertOk();
         $response->assertSee('Mine');
         $response->assertDontSee('Theirs');
+    }
+
+    public function test_show_page_links_to_imdb_when_the_id_is_known(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create(['imdb_id' => 'tt0903747']);
+        $this->trackShow($user, $show);
+
+        $this->actingAs($user)->get(route('shows.show', $show))
+            ->assertOk()
+            ->assertSee('https://www.imdb.com/title/tt0903747/', false);
     }
 
     public function test_index_sorts_by_title(): void
@@ -256,5 +268,50 @@ class ShowControllerTest extends TestCase
 
         $this->actingAs($user)->delete("/shows/{$userShow->id}")->assertForbidden();
         $this->assertDatabaseHas('user_shows', ['id' => $userShow->id]);
+    }
+
+    public function test_picking_watching_on_a_caught_up_show_reconciles_to_finished(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create();
+        $userShow = UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => TrackingStatus::Dropped]);
+        $episode = Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()->subWeek()]);
+        WatchStatus::factory()->watched()->create(['user_id' => $user->id, 'episode_id' => $episode->id]);
+
+        $this->actingAs($user)->patch("/shows/{$userShow->id}/status", ['status' => 'watching']);
+
+        $this->assertSame(TrackingStatus::Finished, $userShow->fresh()->status);
+    }
+
+    public function test_show_page_marks_upcoming_episodes_and_opens_the_current_season(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create();
+        $this->trackShow($user, $show);
+
+        $done = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->subYear()]);
+        WatchStatus::factory()->watched()->create(['user_id' => $user->id, 'episode_id' => $done->id]);
+        Episode::factory()->create(['show_id' => $show->id, 'season' => 2, 'episode_number' => 1, 'air_date' => today()->subWeek()]);
+        Episode::factory()->create(['show_id' => $show->id, 'season' => 2, 'episode_number' => 2, 'air_date' => today()->addDays(3)]);
+
+        $response = $this->actingAs($user)->get(route('shows.show', $show));
+
+        $response->assertOk()
+            ->assertSee('1/1')
+            ->assertSee('0/2')
+            ->assertSee('in 3 days');
+
+        $this->assertMatchesRegularExpression('/id="season-2"\s+open/', $response->getContent());
+        $this->assertDoesNotMatchRegularExpression('/id="season-1"\s+open/', $response->getContent());
+    }
+
+    public function test_mark_season_button_is_hidden_when_only_undated_episodes_remain(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create();
+        $this->trackShow($user, $show);
+        Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'air_date' => null]);
+
+        $this->actingAs($user)->get(route('shows.show', $show))->assertDontSee('Mark season watched');
     }
 }

@@ -80,4 +80,14 @@ class CatalogSearchServiceTest extends TestCase
 
         $this->assertSame('query', $result['query']);
     }
+
+    public function test_a_failed_search_is_not_cached(): void
+    {
+        Http::fakeSequence('api.themoviedb.org/3/search/multi*')
+            ->push(null, 500)
+            ->push(['results' => [['media_type' => 'tv', 'id' => 1, 'name' => 'A Show', 'first_air_date' => '2020-01-01', 'overview' => 'o']]]);
+
+        $this->assertSame([], $this->service->search('blip'));
+        $this->assertCount(1, $this->service->search('blip'));
+    }
 }

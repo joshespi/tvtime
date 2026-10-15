@@ -7,10 +7,12 @@ use App\Services\Movies\MovieNotFoundException;
 use App\Services\Movies\MovieSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\FakesTmdb;
 use Tests\TestCase;
 
 class MovieSyncServiceTest extends TestCase
 {
+    use FakesTmdb;
     use RefreshDatabase;
 
     private MovieSyncService $service;
@@ -24,35 +26,18 @@ class MovieSyncServiceTest extends TestCase
 
     public function test_store_creates_a_movie_from_tmdb(): void
     {
-        Http::fake([
-            'api.themoviedb.org/3/movie/603*' => Http::response([
-                'id' => 603,
-                'title' => 'The Matrix',
-                'poster_path' => '/matrix.jpg',
-                'overview' => 'A hacker...',
-                'status' => 'Released',
-                'vote_average' => 8.7,
-                'genres' => [['name' => 'Action']],
-                'release_date' => '1999-03-31',
-            ]),
-        ]);
+        $this->fakeTmdbMovie();
 
         $movie = $this->service->store('603');
 
         $this->assertSame('The Matrix', $movie->title);
+        $this->assertSame('tt0133093', $movie->imdb_id);
         $this->assertSame('603', $movie->tmdb_id);
     }
 
     public function test_store_is_idempotent_for_the_same_external_id(): void
     {
-        Http::fake([
-            'api.themoviedb.org/3/movie/603*' => Http::response([
-                'id' => 603,
-                'title' => 'The Matrix',
-                'overview' => 'A hacker...',
-                'release_date' => '1999-03-31',
-            ]),
-        ]);
+        $this->fakeTmdbMovie();
 
         $first = $this->service->store('603');
         $second = $this->service->store('603');

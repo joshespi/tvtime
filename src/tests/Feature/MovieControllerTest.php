@@ -234,4 +234,16 @@ class MovieControllerTest extends TestCase
         $this->actingAs($user)->delete("/movies/{$userMovie->id}")->assertForbidden();
         $this->assertDatabaseHas('user_movies', ['id' => $userMovie->id]);
     }
+
+    public function test_explicit_watched_flag_is_idempotent_for_movies(): void
+    {
+        $user = User::factory()->create();
+        $userMovie = UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => Movie::factory()]);
+
+        $this->actingAs($user)->post("/movies/{$userMovie->id}/toggle-watched", ['watched' => 1]);
+        $this->actingAs($user)->post("/movies/{$userMovie->id}/toggle-watched", ['watched' => 1]);
+
+        $this->assertSame(1, $userMovie->watches()->count());
+        $this->assertTrue($userMovie->fresh()->isFinished());
+    }
 }

@@ -7,10 +7,12 @@ use App\Services\Shows\ShowNotFoundException;
 use App\Services\Shows\ShowSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\FakesTmdb;
 use Tests\TestCase;
 
 class ShowSyncServiceTest extends TestCase
 {
+    use FakesTmdb;
     use RefreshDatabase;
 
     private ShowSyncService $service;
@@ -22,28 +24,6 @@ class ShowSyncServiceTest extends TestCase
         $this->service = app(ShowSyncService::class);
     }
 
-    private function fakeTmdbShow(int $seasons = 1): void
-    {
-        Http::fake([
-            'api.themoviedb.org/3/tv/1396/season/*' => Http::response([
-                'episodes' => [
-                    ['episode_number' => 1, 'name' => 'Pilot', 'air_date' => '2008-01-20', 'id' => 111],
-                ],
-            ]),
-            'api.themoviedb.org/3/tv/1396*' => Http::response([
-                'id' => 1396,
-                'name' => 'Breaking Bad',
-                'poster_path' => '/poster.jpg',
-                'number_of_seasons' => $seasons,
-                'overview' => 'A chemistry teacher...',
-                'status' => 'Ended',
-                'vote_average' => 8.9,
-                'genres' => [['name' => 'Drama']],
-                'first_air_date' => '2008-01-20',
-            ]),
-        ]);
-    }
-
     public function test_store_creates_a_show_and_its_episodes_from_tmdb(): void
     {
         $this->fakeTmdbShow();
@@ -51,6 +31,7 @@ class ShowSyncServiceTest extends TestCase
         $show = $this->service->store('1396');
 
         $this->assertSame('Breaking Bad', $show->title);
+        $this->assertSame('tt0903747', $show->imdb_id);
         $this->assertSame('1396', $show->tmdb_id);
         $this->assertDatabaseHas('episodes', ['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'title' => 'Pilot']);
     }

@@ -120,4 +120,21 @@ class CalendarControllerTest extends TestCase
         $response->assertOk();
         $this->assertSame(Carbon::now()->format('Y-m'), $response->viewData('month')->format('Y-m'));
     }
+
+    public function test_calendar_links_movie_releases(): void
+    {
+        $user = User::factory()->create();
+        $movie = Movie::factory()->create(['release_date' => today()]);
+        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
+
+        $this->actingAs($user)->get('/calendar')
+            ->assertSee(route('catalog.show', ['type' => 'movie', 'tmdbId' => $movie->tmdb_id]), false);
+    }
+
+    public function test_pages_carry_their_own_title(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/calendar')->assertSee('<title>Calendar · ', false);
+    }
 }

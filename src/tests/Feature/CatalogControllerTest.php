@@ -9,10 +9,12 @@ use App\Models\UserMovie;
 use App\Models\UserShow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Tests\Concerns\FakesTmdb;
 use Tests\TestCase;
 
 class CatalogControllerTest extends TestCase
 {
+    use FakesTmdb;
     use RefreshDatabase;
 
     public function test_guests_are_redirected_to_login(): void
@@ -24,17 +26,7 @@ class CatalogControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Http::fake([
-            'api.themoviedb.org/3/tv/1396*' => Http::response([
-                'id' => 1396,
-                'name' => 'Breaking Bad',
-                'overview' => 'A chemistry teacher...',
-                'number_of_seasons' => 5,
-                'first_air_date' => '2008-01-20',
-                'vote_average' => 8.9,
-                'genres' => [['name' => 'Drama']],
-            ]),
-        ]);
+        $this->fakeTmdbShow();
 
         $response = $this->actingAs($user)->get('/catalog/show/1396');
 
@@ -42,6 +34,7 @@ class CatalogControllerTest extends TestCase
         $response->assertSee('Breaking Bad');
         $response->assertSee('A chemistry teacher...');
         $response->assertSee('Track');
+        $response->assertSee('https://www.imdb.com/title/tt0903747/', false);
     }
 
     public function test_redirects_to_the_tracked_show_page_when_the_user_already_tracks_it(): void
@@ -69,16 +62,7 @@ class CatalogControllerTest extends TestCase
     {
         $user = User::factory()->create();
 
-        Http::fake([
-            'api.themoviedb.org/3/movie/603*' => Http::response([
-                'id' => 603,
-                'title' => 'The Matrix',
-                'overview' => 'A hacker...',
-                'release_date' => '1999-03-31',
-                'vote_average' => 8.2,
-                'genres' => [['name' => 'Sci-Fi']],
-            ]),
-        ]);
+        $this->fakeTmdbMovie();
 
         $response = $this->actingAs($user)->get('/catalog/movie/603');
 
@@ -131,5 +115,15 @@ class CatalogControllerTest extends TestCase
         Http::fake(['api.themoviedb.org/3/movie/*' => Http::response(null, 404)]);
 
         $this->actingAs($user)->get('/catalog/movie/missing')->assertNotFound();
+    }
+
+    public function test_catalog_route_rejects_a_non_numeric_tmdb_id_without_calling_tmdb(): void
+    {
+        Http::fake();
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/catalog/movie/abc')->assertNotFound();
+
+        Http::assertNothingSent();
     }
 }

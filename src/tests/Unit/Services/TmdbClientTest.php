@@ -31,6 +31,7 @@ class TmdbClientTest extends TestCase
                 'vote_average' => 8.9,
                 'genres' => [['name' => 'Drama'], ['name' => 'Crime']],
                 'first_air_date' => '2008-01-20',
+                'external_ids' => ['imdb_id' => 'tt0903747'],
                 'credits' => [
                     'cast' => [
                         ['name' => 'Bryan Cranston', 'character' => 'Walter White', 'profile_path' => '/cranston.jpg'],
@@ -56,6 +57,7 @@ class TmdbClientTest extends TestCase
             'vote_average' => 8.9,
             'genres' => ['Drama', 'Crime'],
             'first_air_date' => '2008-01-20',
+            'imdb_id' => 'tt0903747',
             'cast' => [
                 // No person id in the credits above, so there's nothing to look
                 // an IMDB id up by — the member still maps, with imdb_id null.
@@ -63,6 +65,17 @@ class TmdbClientTest extends TestCase
             ],
             'trailer_key' => 'abc123',
         ], $show);
+    }
+
+    public function test_show_imdb_id_is_null_when_external_ids_are_missing_or_empty(): void
+    {
+        Http::fake([
+            'api.themoviedb.org/3/tv/1*' => Http::response(['id' => 1, 'name' => 'A', 'overview' => '', 'first_air_date' => '']),
+            'api.themoviedb.org/3/tv/2*' => Http::response(['id' => 2, 'name' => 'B', 'overview' => '', 'first_air_date' => '', 'external_ids' => ['imdb_id' => '']]),
+        ]);
+
+        $this->assertNull($this->client->show('1', append: [])['imdb_id']);
+        $this->assertNull($this->client->show('2')['imdb_id']);
     }
 
     public function test_show_returns_null_when_the_request_fails(): void
@@ -107,13 +120,13 @@ class TmdbClientTest extends TestCase
         $this->assertSame('2021-01-01', $results[1]['date']);
     }
 
-    public function test_search_multi_returns_empty_array_when_the_request_fails(): void
+    public function test_search_multi_returns_null_when_the_request_fails(): void
     {
         Http::fake([
             'api.themoviedb.org/3/search/multi*' => Http::response(null, 500),
         ]);
 
-        $this->assertSame([], $this->client->searchMulti('query'));
+        $this->assertNull($this->client->searchMulti('query'));
     }
 
     public function test_movie_maps_the_tmdb_response(): void
@@ -128,6 +141,7 @@ class TmdbClientTest extends TestCase
                 'vote_average' => 8.7,
                 'genres' => [['name' => 'Action']],
                 'release_date' => '1999-03-31',
+                'imdb_id' => 'tt0133093',
                 'credits' => [
                     'cast' => [
                         ['name' => 'Keanu Reeves', 'character' => 'Neo', 'profile_path' => '/reeves.jpg'],
@@ -152,6 +166,7 @@ class TmdbClientTest extends TestCase
             'vote_average' => 8.7,
             'genres' => ['Action'],
             'release_date' => '1999-03-31',
+            'imdb_id' => 'tt0133093',
             'cast' => [
                 ['name' => 'Keanu Reeves', 'character' => 'Neo', 'profile_path' => '/reeves.jpg', 'imdb_id' => null],
             ],

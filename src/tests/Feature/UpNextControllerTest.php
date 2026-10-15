@@ -29,8 +29,6 @@ class UpNextControllerTest extends TestCase
 
     public function test_shows_the_earliest_unwatched_aired_episode_per_show(): void
     {
-        Http::fake();
-
         $user = User::factory()->create();
         $show = Show::factory()->create(['title' => 'Breaking Bad']);
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
@@ -58,8 +56,6 @@ class UpNextControllerTest extends TestCase
 
     public function test_omits_shows_with_nothing_unwatched(): void
     {
-        Http::fake();
-
         $user = User::factory()->create();
         $show = Show::factory()->create();
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
@@ -73,8 +69,6 @@ class UpNextControllerTest extends TestCase
 
     public function test_ignores_shows_that_are_not_actively_watching(): void
     {
-        Http::fake();
-
         $user = User::factory()->create();
         $show = Show::factory()->create();
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'paused']);
@@ -87,8 +81,6 @@ class UpNextControllerTest extends TestCase
 
     public function test_shows_the_full_movie_watchlist(): void
     {
-        Http::fake();
-
         $user = User::factory()->create();
         $movie = Movie::factory()->create(['title' => 'A Movie']);
         UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
@@ -101,8 +93,6 @@ class UpNextControllerTest extends TestCase
 
     public function test_lists_the_next_unaired_episode_per_watching_show(): void
     {
-        Http::fake();
-
         $user = User::factory()->create();
         $show = Show::factory()->create();
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
@@ -120,8 +110,6 @@ class UpNextControllerTest extends TestCase
 
     public function test_dashboard_trims_airing_soon_to_one_row_and_links_to_the_full_list(): void
     {
-        Http::fake();
-
         $user = User::factory()->create();
 
         foreach (range(1, 4) as $i) {
@@ -140,8 +128,6 @@ class UpNextControllerTest extends TestCase
 
     public function test_airing_soon_index_lists_the_full_upcoming_list(): void
     {
-        Http::fake();
-
         $user = User::factory()->create();
 
         foreach (range(1, 4) as $i) {
@@ -158,8 +144,6 @@ class UpNextControllerTest extends TestCase
 
     public function test_airing_soon_index_is_empty_when_nothing_upcoming(): void
     {
-        Http::fake();
-
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->get('/airing-soon');
@@ -170,8 +154,6 @@ class UpNextControllerTest extends TestCase
 
     public function test_airing_soon_omits_shows_with_nothing_upcoming(): void
     {
-        Http::fake();
-
         $user = User::factory()->create();
         $show = Show::factory()->create();
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
@@ -187,8 +169,6 @@ class UpNextControllerTest extends TestCase
         $user = User::factory()->create(['recommendations_enabled' => false]);
         $show = Show::factory()->create(['tmdb_id' => '1396']);
         UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
-
-        Http::fake();
 
         $response = $this->actingAs($user)->get('/dashboard');
 
@@ -213,5 +193,25 @@ class UpNextControllerTest extends TestCase
         $response = $this->actingAs($user)->get('/dashboard');
 
         $this->assertCount(1, $response->viewData('recommendations'));
+    }
+
+    public function test_dashboard_shows_how_many_more_episodes_are_waiting(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create();
+        $this->trackShow($user, $show);
+
+        foreach ([1, 2, 3, 4] as $number) {
+            Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => $number, 'air_date' => today()->subDays(10 - $number)]);
+        }
+
+        $this->actingAs($user)->get('/dashboard')->assertSee('+3 more');
+    }
+
+    public function test_dashboard_welcomes_a_user_who_tracks_nothing(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/dashboard')->assertSee('Nothing is being tracked yet');
     }
 }

@@ -98,4 +98,29 @@ class HistoryControllerTest extends TestCase
 
         $this->assertStringNotContainsString('Someone Elses Movie', $response->streamedContent());
     }
+
+    public function test_history_says_when_it_is_capped(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create();
+        $this->trackShow($user, $show);
+
+        $episodes = Episode::factory()->count(201)->create(['show_id' => $show->id]);
+        WatchStatus::insert($episodes->map(fn ($episode) => [
+            'user_id' => $user->id,
+            'episode_id' => $episode->id,
+            'watched_at' => now(),
+        ])->all());
+
+        $this->actingAs($user)->get('/history')->assertSee('Showing your latest 200 entries');
+    }
+
+    public function test_history_has_no_cap_note_below_the_limit(): void
+    {
+        $user = User::factory()->create();
+        $episode = $this->trackedEpisode($user);
+        WatchStatus::factory()->watched()->create(['user_id' => $user->id, 'episode_id' => $episode->id]);
+
+        $this->actingAs($user)->get('/history')->assertDontSee('Showing your latest');
+    }
 }

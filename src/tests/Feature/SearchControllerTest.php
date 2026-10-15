@@ -101,7 +101,7 @@ class SearchControllerTest extends TestCase
 
         $response = $this->actingAs($user)->post('/search', [
             'type' => 'show',
-            'external_id' => 'missing',
+            'external_id' => '999999',
         ]);
 
         $response->assertSessionHasErrors('external_id');
@@ -139,7 +139,7 @@ class SearchControllerTest extends TestCase
 
         $response = $this->actingAs($user)->post('/search', [
             'type' => 'movie',
-            'external_id' => 'missing',
+            'external_id' => '999999',
         ]);
 
         $response->assertSessionHasErrors('external_id');
@@ -210,7 +210,7 @@ class SearchControllerTest extends TestCase
 
         $response = $this->actingAs($user)->postJson('/search', [
             'type' => 'show',
-            'external_id' => 'missing',
+            'external_id' => '999999',
         ]);
 
         $response->assertStatus(422);
@@ -303,5 +303,16 @@ class SearchControllerTest extends TestCase
         $response->assertOk();
         $this->assertNull($response->viewData('results')[0]['tracked']);
         $response->assertSee('Add to watchlist');
+    }
+
+    public function test_store_says_tmdb_is_unavailable_during_an_outage(): void
+    {
+        $user = User::factory()->create();
+
+        Http::fake(['api.themoviedb.org/3/tv/*' => Http::response(null, 503)]);
+
+        $this->actingAs($user)->postJson('/search', ['type' => 'show', 'external_id' => '1396'])
+            ->assertStatus(422)
+            ->assertJson(['message' => 'TMDB is not responding right now. Try again in a moment.']);
     }
 }
