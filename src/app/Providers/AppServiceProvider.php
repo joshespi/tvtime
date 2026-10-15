@@ -20,12 +20,4 @@ class AppServiceProvider extends ServiceProvider
         // persists across requests.
         $this->app->singleton(TmdbClient::class);
     }
-
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
-    {
-        //
-    }
 }

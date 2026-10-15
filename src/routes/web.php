@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CatalogController;
-use App\Http\Controllers\ClientErrorController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\ProfileController;
@@ -21,10 +20,6 @@ Route::get('/manifest.webmanifest', function () {
     return response()->view('manifest')->header('Content-Type', 'application/manifest+json');
 })->name('manifest');
 
-Route::post('/client-errors', [ClientErrorController::class, 'store'])
-    ->middleware('throttle:20,1')
-    ->name('client-errors.store');
-
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', UpNextController::class)->name('dashboard');
     Route::get('/airing-soon', [UpNextController::class, 'airingSoon'])->name('airing-soon.index');
@@ -36,6 +31,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/catalog/{type}/{tmdbId}', [CatalogController::class, 'show'])
         ->where('type', 'show|movie')
+        ->whereNumber('tmdbId')
         ->name('catalog.show');
 
     Route::post('/recommendations/dismiss', [RecommendationController::class, 'dismiss'])->name('recommendations.dismiss');
