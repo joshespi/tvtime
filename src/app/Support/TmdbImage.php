@@ -9,7 +9,19 @@ namespace App\Support;
  */
 class TmdbImage
 {
-    public static function url(?string $posterPath, string $size = 'w185'): ?string
+    /** Poster size for list cards and cast headshots. */
+    public const SIZE_CARD = 'w185';
+
+    /** Poster size for a title's own detail page. */
+    public const SIZE_DETAIL = 'w342';
+
+    /** Small size for push notification icons. */
+    public const SIZE_ICON = 'w92';
+
+    /** Shown when a title has no poster. */
+    public const FALLBACK_ICON = '/icon-192.png';
+
+    public static function url(?string $posterPath, string $size = self::SIZE_CARD): ?string
     {
         if (! $posterPath) {
             return null;

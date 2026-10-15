@@ -19,7 +19,7 @@ class Show extends Model
 
     protected $fillable = [
         'tmdb_id', 'title', 'poster_path', 'overview', 'status', 'vote_average',
-        'genres', 'first_air_date', 'synced_at', 'cast', 'trailer_key',
+        'genres', 'first_air_date', 'synced_at', 'cast', 'trailer_key', 'imdb_id',
     ];
 
     protected function casts(): array
@@ -61,6 +61,9 @@ class Show extends Model
     /**
      * Episodes annotated with `watched` and `hasUnwatchedBefore` (an earlier
      * unwatched episode exists) — the latter drives the "mark through here" prompt.
+     *
+     * The annotations are plain dynamic attributes for the view to read: these
+     * models are display-only and must never be save()d.
      */
     public function episodesWithWatchState(int $userId): Collection
     {

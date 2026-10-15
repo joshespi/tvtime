@@ -18,7 +18,7 @@ class Movie extends Model
 
     protected $fillable = [
         'tmdb_id', 'title', 'poster_path', 'overview', 'status', 'vote_average',
-        'genres', 'release_date', 'synced_at', 'cast', 'trailer_key',
+        'genres', 'release_date', 'synced_at', 'cast', 'trailer_key', 'imdb_id',
     ];
 
     protected function casts(): array

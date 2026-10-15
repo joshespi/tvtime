@@ -2,13 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\UserMovie;
-use App\Models\UserShow;
 use App\Services\Catalog\CatalogSearchService;
-use App\Services\Movies\MovieNotFoundException;
 use App\Services\Movies\MovieSyncService;
-use App\Services\Shows\ShowNotFoundException;
 use App\Services\Shows\ShowSyncService;
+use App\Services\Shows\TmdbUnavailableException;
+use App\Services\TitleNotFoundException;
 use App\Support\TrackingStatus;
 use App\Support\WatchCount;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +16,10 @@ use Illuminate\Support\Arr;
 
 class SearchController extends Controller
 {
+    private const SUGGESTION_LIMIT = 8;
+
+    private const UNAVAILABLE = 'TMDB is not responding right now. Try again in a moment.';
+
     public function __construct(
         private readonly CatalogSearchService $catalog,
         private readonly ShowSyncService $shows,
@@ -40,7 +42,7 @@ class SearchController extends Controller
 
         return response()->json(
             collect($results)
-                ->take(8)
+                ->take(self::SUGGESTION_LIMIT)
                 ->map(fn (array $result) => Arr::only($result, ['type', 'id', 'title', 'date', 'poster_url']))
                 ->values()
         );
@@ -50,46 +52,34 @@ class SearchController extends Controller
     {
         $validated = $request->validate([
             'type' => ['required', 'in:show,movie'],
-            'external_id' => ['required', 'string'],
+            'external_id' => ['required', 'integer', 'min:1'],
         ]);
 
-        if ($validated['type'] === 'movie') {
-            return $this->storeMovie($request, $validated['external_id']);
+        try {
+            return $validated['type'] === 'movie'
+                ? $this->storeMovie($request, $validated['external_id'])
+                : $this->storeShow($request, $validated['external_id']);
+        } catch (TitleNotFoundException) {
+            return $this->respondError($request, "Could not find that {$validated['type']} on TMDB.");
+        } catch (TmdbUnavailableException) {
+            return $this->respondError($request, self::UNAVAILABLE);
         }
-
-        return $this->storeShow($request, $validated['external_id']);
     }
 
     private function storeShow(Request $request, string $externalId): RedirectResponse|JsonResponse
     {
-        try {
-            $show = $this->shows->store($externalId);
-        } catch (ShowNotFoundException) {
-            return $this->respondError($request, 'Could not find that show on TMDB.');
-        }
+        $show = $this->shows->store($externalId);
 
-        UserShow::firstOrCreate([
-            'user_id' => $request->user()->id,
-            'show_id' => $show->id,
-        ], [
-            'status' => TrackingStatus::Watching,
-        ]);
+        $request->user()->shows()->firstOrCreate(['show_id' => $show->id], ['status' => TrackingStatus::Watching]);
 
         return $this->respondSuccess($request, "Now tracking \"{$show->title}\".", 'shows.index');
     }
 
     private function storeMovie(Request $request, string $externalId): RedirectResponse|JsonResponse
     {
-        try {
-            $movie = $this->movies->store($externalId);
-        } catch (MovieNotFoundException) {
-            return $this->respondError($request, 'Could not find that movie on TMDB.');
-        }
+        $movie = $this->movies->store($externalId);
 
-        $userMovie = UserMovie::firstOrCreate([
-            'user_id' => $request->user()->id,
-            'movie_id' => $movie->id,
-        ]);
+        $userMovie = $request->user()->movies()->firstOrCreate(['movie_id' => $movie->id]);
 
         // Adding a movie that was already watched is a rewatch, not a no-op:
         // without this the button would report success while the movie stayed

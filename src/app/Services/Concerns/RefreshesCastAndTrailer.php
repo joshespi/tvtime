@@ -17,11 +17,12 @@ trait RefreshesCastAndTrailer
      * Re-fetch cast/trailer for a title tracked before those columns existed.
      *
      * @param  callable(string): ?array  $fetch  Detail fetch for this title type, with the default append.
+     * @return bool Whether the title was actually updated.
      */
-    protected function backfillCastAndTrailer(Model $title, callable $fetch): void
+    protected function backfillCastAndTrailer(Model $title, callable $fetch): bool
     {
         if (! $title->tmdb_id) {
-            return;
+            return false;
         }
 
         $details = $fetch((string) $title->tmdb_id);
@@ -32,12 +33,15 @@ trait RefreshesCastAndTrailer
                 'id' => $title->id,
             ]);
 
-            return;
+            return false;
         }
 
         $title->update([
             'cast' => $details['cast'] ?? [],
             'trailer_key' => $details['trailer_key'] ?? null,
+            'imdb_id' => $details['imdb_id'] ?? $title->imdb_id,
         ]);
+
+        return true;
     }
 }

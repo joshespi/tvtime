@@ -3,37 +3,30 @@
 namespace App\Services\Movies;
 
 use App\Models\Movie;
+use App\Services\Concerns\MapsTmdbMetadata;
 use App\Services\Concerns\RefreshesCastAndTrailer;
 use App\Services\Shows\TmdbClient;
+use Illuminate\Support\Facades\Log;
 
 class MovieSyncService
 {
+    use MapsTmdbMetadata;
     use RefreshesCastAndTrailer;
 
     public function __construct(private readonly TmdbClient $tmdb) {}
 
     public function store(string $externalId): Movie
     {
-        $movie = $this->tmdb->movie($externalId);
+        $movie = $this->tmdb->movie($externalId, strict: true);
 
         if (! $movie) {
             throw MovieNotFoundException::forQuery($externalId);
         }
 
-        $attributes = [
-            'title' => $movie['title'],
-            'poster_path' => $movie['poster_path'],
-            'overview' => $movie['overview'] ?? null,
-            'status' => $movie['status'] ?? null,
-            'vote_average' => $movie['vote_average'] ?? null,
-            'genres' => $movie['genres'] ?? [],
+        return Movie::updateOrCreate(['tmdb_id' => $externalId], [
+            ...$this->storeAttributes($movie),
             'release_date' => $movie['release_date'] ?? null,
-            'cast' => $movie['cast'] ?? [],
-            'trailer_key' => $movie['trailer_key'] ?? null,
-            'synced_at' => now(),
-        ];
-
-        return Movie::updateOrCreate(['tmdb_id' => $externalId], $attributes);
+        ]);
     }
 
     /** Re-fetch metadata for a movie already in the catalog. */
@@ -49,22 +42,20 @@ class MovieSyncService
         $details = $this->tmdb->movie((string) $movie->tmdb_id, append: []);
 
         if (! $details) {
+            Log::warning('Skipping movie metadata refresh, TMDB fetch failed', ['movie_id' => $movie->id]);
+
             return;
         }
 
         $movie->update([
-            'synced_at' => now(),
-            'overview' => $details['overview'] ?? $movie->overview,
-            'status' => $details['status'] ?? $movie->status,
-            'vote_average' => $details['vote_average'] ?? $movie->vote_average,
-            'genres' => $details['genres'] ?: $movie->genres,
+            ...$this->refreshAttributes($details, $movie),
             'release_date' => $details['release_date'] ?? $movie->release_date,
         ]);
     }
 
     /** Re-fetch cast/trailer for a movie that was tracked before those columns existed. */
-    public function refreshCastAndTrailer(Movie $movie): void
+    public function refreshCastAndTrailer(Movie $movie): bool
     {
-        $this->backfillCastAndTrailer($movie, fn (string $id) => $this->tmdb->movie($id));
+        return $this->backfillCastAndTrailer($movie, fn (string $id) => $this->tmdb->movie($id));
     }
 }

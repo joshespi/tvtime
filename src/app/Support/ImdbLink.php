@@ -7,10 +7,16 @@ class ImdbLink
 {
     public static function personUrl(?string $imdbId): ?string
     {
-        if (! $imdbId) {
-            return null;
-        }
+        return self::url('name', $imdbId);
+    }
 
-        return "https://www.imdb.com/name/{$imdbId}/";
+    public static function titleUrl(?string $imdbId): ?string
+    {
+        return self::url('title', $imdbId);
+    }
+
+    private static function url(string $kind, ?string $imdbId): ?string
+    {
+        return $imdbId ? "https://www.imdb.com/{$kind}/{$imdbId}/" : null;
     }
 }

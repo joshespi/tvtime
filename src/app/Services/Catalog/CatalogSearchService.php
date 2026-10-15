@@ -14,10 +14,10 @@ use Illuminate\Support\Facades\Cache;
 /** Backs the combined "add a show or movie" search box, via TMDB's multi-search. */
 class CatalogSearchService
 {
-    public function __construct(private readonly TmdbClient $tmdb) {}
-
     /** How long an identical catalog search is reused before re-hitting TMDB. */
     private const CACHE_TTL_MINUTES = 60;
+
+    public function __construct(private readonly TmdbClient $tmdb) {}
 
     /** @return array<int, array> */
     public function search(string $query): array
@@ -25,11 +25,13 @@ class CatalogSearchService
         // The same query gets re-issued constantly — typeahead then form submit,
         // then again on every sort change and reload, since <x-query-select>
         // carries ?q= forward. Results are static for far longer than this TTL.
+        // A failed search comes back null, which remember() treats as a miss on
+        // the next read, so one TMDB blip doesn't blank this query for the TTL.
         return Cache::remember(
             'catalog:search:'.md5(mb_strtolower($query)),
             now()->addMinutes(self::CACHE_TTL_MINUTES),
             fn () => $this->tmdb->searchMulti($query)
-        );
+        ) ?? [];
     }
 
     /**

@@ -28,8 +28,8 @@ class TmdbClient
      * TMDB `append_to_response` sections a full show/movie detail fetch pulls in
      * beyond the base payload. Cast/trailer data barely changes once a title's
      * released, so the daily refresh jobs (which already re-fetch show()/movie()
-     * for episode/status freshness) pass an empty append list instead — only an
-     * initial store() or an on-demand catalog preview needs this.
+     * for episode/status freshness) pass [] instead — only an initial store()
+     * or an on-demand catalog preview needs the full set.
      */
     private const DETAIL_APPEND = ['credits', 'videos'];
 
@@ -51,25 +51,31 @@ class TmdbClient
         $this->key = (string) config('services.tmdb.key');
     }
 
-    /** @param  array<int, string>  $append  Which DETAIL_APPEND-style sections to request; pass [] to skip them. */
-    public function show(string $id, array $append = self::DETAIL_APPEND): ?array
+    /**
+     * @param  array<int, string>  $append  Which DETAIL_APPEND sections to request; pass [] to skip them.
+     *                                      `external_ids` (the IMDB id) is always added: it costs no follow-up
+     *                                      request, and a movie's is already in its base payload.
+     * @param  bool  $strict  Throw TmdbUnavailableException on an outage instead of returning null, so "TMDB is down" can be told apart from "no such title".
+     */
+    public function show(string $id, array $append = self::DETAIL_APPEND, bool $strict = false): ?array
     {
-        $data = $this->detail("/tv/{$id}", $append, 'show');
+        $data = $this->detail("/tv/{$id}", [...$append, 'external_ids'], 'show', $strict);
 
         if ($data === null) {
             return null;
         }
 
         return [
-            'id' => (string) $data['id'],
-            'title' => $data['name'],
+            'id' => (string) ($data['id'] ?? ''),
+            'title' => $data['name'] ?? '',
             'poster_path' => $data['poster_path'] ?? null,
             'number_of_seasons' => $data['number_of_seasons'] ?? 0,
-            'overview' => $data['overview'] ?: null,
+            'overview' => ($data['overview'] ?? null) ?: null,
             'status' => $data['status'] ?? null,
             'vote_average' => $data['vote_average'] ?? null,
             'genres' => collect($data['genres'] ?? [])->pluck('name')->all(),
-            'first_air_date' => $data['first_air_date'] ?: null,
+            'first_air_date' => ($data['first_air_date'] ?? null) ?: null,
+            'imdb_id' => ($data['external_ids']['imdb_id'] ?? null) ?: null,
             ...$this->mapExtras($data),
         ];
     }
@@ -77,22 +83,24 @@ class TmdbClient
     /**
      * Combined show+movie search via TMDB's /search/multi. Person results are dropped.
      *
-     * @return array<int, array{type: string, id: string, title: string, poster_path: ?string, poster_url: ?string, date: ?string, overview: ?string, vote_average: ?float, genres: array<int, string>}>
+     * Null (not an empty list) when TMDB failed, so callers can skip caching it.
+     *
+     * @return ?array<int, array{type: string, id: string, title: string, poster_path: ?string, poster_url: ?string, date: ?string, overview: ?string, vote_average: ?float, genres: array<int, string>}>
      */
-    public function searchMulti(string $query): array
+    public function searchMulti(string $query): ?array
     {
         try {
             $response = $this->request()->get('/search/multi', ['query' => $query]);
         } catch (ConnectionException $e) {
             Log::warning('TMDB multi-search failed to connect', ['query' => $query, 'message' => $e->getMessage()]);
 
-            return [];
+            return null;
         }
 
         if ($response->failed()) {
             Log::warning('TMDB multi-search failed', ['query' => $query, 'status' => $response->status()]);
 
-            return [];
+            return null;
         }
 
         return collect($response->json('results', []))
@@ -172,34 +180,35 @@ class TmdbClient
         return [
             'type' => $type,
             'id' => (string) $result['id'],
-            'title' => $isMovie ? $result['title'] : $result['name'],
+            'title' => $result[$isMovie ? 'title' : 'name'] ?? '',
             'poster_path' => $posterPath,
             'poster_url' => TmdbImage::url($posterPath),
-            'date' => ($isMovie ? $result['release_date'] : $result['first_air_date']) ?: null,
-            'overview' => $result['overview'] ?: null,
+            'date' => ($result[$isMovie ? 'release_date' : 'first_air_date'] ?? null) ?: null,
+            'overview' => ($result['overview'] ?? null) ?: null,
             'vote_average' => $result['vote_average'] ?? null,
             'genres' => [],
         ];
     }
 
     /** @param  array<int, string>  $append  See show()'s docblock — same rationale applies to movies. */
-    public function movie(string $id, array $append = self::DETAIL_APPEND): ?array
+    public function movie(string $id, array $append = self::DETAIL_APPEND, bool $strict = false): ?array
     {
-        $data = $this->detail("/movie/{$id}", $append, 'movie');
+        $data = $this->detail("/movie/{$id}", $append, 'movie', $strict);
 
         if ($data === null) {
             return null;
         }
 
         return [
-            'id' => (string) $data['id'],
-            'title' => $data['title'],
+            'id' => (string) ($data['id'] ?? ''),
+            'title' => $data['title'] ?? '',
             'poster_path' => $data['poster_path'] ?? null,
-            'overview' => $data['overview'] ?: null,
+            'overview' => ($data['overview'] ?? null) ?: null,
             'status' => $data['status'] ?? null,
             'vote_average' => $data['vote_average'] ?? null,
             'genres' => collect($data['genres'] ?? [])->pluck('name')->all(),
-            'release_date' => $data['release_date'] ?: null,
+            'release_date' => ($data['release_date'] ?? null) ?: null,
+            'imdb_id' => ($data['imdb_id'] ?? null) ?: null,
             ...$this->mapExtras($data),
         ];
     }
@@ -213,17 +222,31 @@ class TmdbClient
      * @param  array<int, string>  $append
      * @param  string  $type  Only used to label the log line.
      */
-    private function detail(string $path, array $append, string $type): ?array
+    private function detail(string $path, array $append, string $type, bool $strict): ?array
     {
         try {
             $response = $this->request()->get($path, $this->params($append));
         } catch (ConnectionException $e) {
             Log::warning("TMDB {$type} lookup failed to connect", ['path' => $path, 'message' => $e->getMessage()]);
 
+            if ($strict) {
+                throw new TmdbUnavailableException('TMDB could not be reached.', previous: $e);
+            }
+
             return null;
         }
 
-        return $response->failed() ? null : $response->json();
+        if ($response->failed()) {
+            Log::warning("TMDB {$type} lookup failed", ['path' => $path, 'status' => $response->status()]);
+
+            if ($strict && ($response->serverError() || $response->status() === 429)) {
+                throw new TmdbUnavailableException("TMDB answered {$response->status()}.");
+            }
+
+            return null;
+        }
+
+        return $response->json();
     }
 
     /**
@@ -401,6 +424,8 @@ class TmdbClient
             $response = $responses[$season] ?? null;
 
             if (! $response instanceof Response || $response->failed()) {
+                Log::warning('TMDB season fetch failed', ['show' => $id, 'season' => $season, 'status' => $response instanceof Response ? $response->status() : null]);
+
                 continue;
             }
 

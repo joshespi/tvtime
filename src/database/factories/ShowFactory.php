@@ -23,6 +23,7 @@ class ShowFactory extends Factory
             'vote_average' => fake()->randomFloat(1, 0, 10),
             'genres' => ['Drama'],
             'first_air_date' => fake()->date(),
+            'imdb_id' => null,
             'synced_at' => now(),
         ];
     }

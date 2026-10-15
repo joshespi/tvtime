@@ -2,9 +2,9 @@
 
 namespace App\Services\Shows;
 
-use RuntimeException;
+use App\Services\TitleNotFoundException;
 
-class ShowNotFoundException extends RuntimeException
+class ShowNotFoundException extends TitleNotFoundException
 {
     public static function forQuery(string $query): self
     {

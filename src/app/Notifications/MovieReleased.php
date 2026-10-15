@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Movie;
 use App\Notifications\Concerns\TracksNotificationSubject;
+use App\Support\TmdbImage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -45,7 +46,7 @@ class MovieReleased extends Notification implements ShouldQueue, TracksNotificat
         return (new WebPushMessage)
             ->title("Released today: {$this->movie->title}")
             ->body("\"{$this->movie->title}\" is out today.")
-            ->icon($this->movie->posterUrl('w92') ?? '/icon-192.png')
+            ->icon($this->movie->posterUrl(TmdbImage::SIZE_ICON) ?? TmdbImage::FALLBACK_ICON)
             ->data(['url' => route('movies.index')])
             ->tag("movie-{$this->movie->id}");
     }

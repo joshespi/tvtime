@@ -18,28 +18,20 @@ class BackfillCastAndTrailer extends Command
 {
     public function handle(ShowSyncService $shows, MovieSyncService $movies): void
     {
-        $trackedShows = Show::query()->whereNull('cast')->whereNotNull('tmdb_id')->get();
+        foreach (['show' => [Show::class, $shows], 'movie' => [Movie::class, $movies]] as $type => [$model, $sync]) {
+            $titles = $model::query()->whereNull('cast')->whereNotNull('tmdb_id')->get();
 
-        foreach ($trackedShows as $show) {
-            try {
-                $shows->refreshCastAndTrailer($show);
-            } catch (Throwable $e) {
-                Log::error('Failed to backfill cast/trailer for show', ['show_id' => $show->id, 'message' => $e->getMessage()]);
+            $done = 0;
+
+            foreach ($titles as $title) {
+                try {
+                    $done += (int) $sync->refreshCastAndTrailer($title);
+                } catch (Throwable $e) {
+                    Log::error("Failed to backfill cast/trailer for {$type}", ["{$type}_id" => $title->id, 'message' => $e->getMessage()]);
+                }
             }
+
+            $this->info("Backfilled {$done} of {$titles->count()} {$type}(s).");
         }
-
-        $this->info("Backfilled {$trackedShows->count()} show(s).");
-
-        $trackedMovies = Movie::query()->whereNull('cast')->whereNotNull('tmdb_id')->get();
-
-        foreach ($trackedMovies as $movie) {
-            try {
-                $movies->refreshCastAndTrailer($movie);
-            } catch (Throwable $e) {
-                Log::error('Failed to backfill cast/trailer for movie', ['movie_id' => $movie->id, 'message' => $e->getMessage()]);
-            }
-        }
-
-        $this->info("Backfilled {$trackedMovies->count()} movie(s).");
     }
 }

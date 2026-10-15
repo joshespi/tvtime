@@ -2,9 +2,9 @@
 
 namespace App\Services\Movies;
 
-use RuntimeException;
+use App\Services\TitleNotFoundException;
 
-class MovieNotFoundException extends RuntimeException
+class MovieNotFoundException extends TitleNotFoundException
 {
     public static function forQuery(string $query): self
     {

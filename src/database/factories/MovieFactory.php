@@ -23,6 +23,7 @@ class MovieFactory extends Factory
             'vote_average' => fake()->randomFloat(1, 0, 10),
             'genres' => ['Action'],
             'release_date' => fake()->date(),
+            'imdb_id' => null,
             'synced_at' => now(),
         ];
     }

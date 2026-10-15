@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Episode;
 use App\Notifications\Concerns\TracksNotificationSubject;
+use App\Support\TmdbImage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -52,7 +53,7 @@ class NewEpisodeAired extends Notification implements ShouldQueue, TracksNotific
         return (new WebPushMessage)
             ->title("New episode: {$show->title}")
             ->body("{$this->episode->label()} just aired.")
-            ->icon($show->posterUrl('w92') ?? '/icon-192.png')
+            ->icon($show->posterUrl(TmdbImage::SIZE_ICON) ?? TmdbImage::FALLBACK_ICON)
             ->data(['url' => route('dashboard')])
             ->tag("episode-{$this->episode->id}");
     }
