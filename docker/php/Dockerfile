@@ -1,19 +1,17 @@
 FROM php:8.5-fpm
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
-    libpng-dev \
     libonig-dev \
-    libxml2-dev \
     zip \
     unzip \
     mariadb-client \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+RUN docker-php-ext-install pdo_mysql mbstring pcntl bcmath
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Node lives in this image (not a separate one-shot container) so assets build
 # with `docker exec tv-tracker-app npm run build`, same as artisan/composer.

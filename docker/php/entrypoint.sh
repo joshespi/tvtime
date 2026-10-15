@@ -19,16 +19,6 @@ done
 # before this run's composer install/migrate have actually finished.
 rm -f storage/framework/migrated
 
-# The ./src bind mount always lands here root:root, no matter what the image
-# sets up at build time — php-fpm's workers run as www-data (see
-# zzz-laravel.conf), so without this every write under storage/ and
-# bootstrap/cache/ (view cache, logs, framework cache) fails. queue/scheduler
-# share this same host volume, so fixing it here covers them too.
-echo "[deploy] fixing storage/bootstrap permissions for www-data"
-chown -R www-data:www-data storage bootstrap/cache
-find storage bootstrap/cache -type d -exec chmod 775 {} +
-find storage bootstrap/cache -type f -exec chmod 664 {} +
-
 app-bootstrap --boot
 
 # Lets queue/scheduler containers (which share this volume) know it's safe to

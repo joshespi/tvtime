@@ -1,6 +1,6 @@
 #!/bin/bash
 # Brings the mounted ./src up to date with what the code expects: PHP deps,
-# schema, front-end assets, framework caches. Idempotent and cheap when nothing
+# schema, front-end assets, framework caches, storage permissions. Idempotent and cheap when nothing
 # changed. Runs from entrypoint.sh on every container start, and from
 # script/deploy.sh (via `docker compose exec app app-bootstrap`) when a deploy
 # doesn't recreate the container.
@@ -72,3 +72,16 @@ else
     echo "[deploy] optimize:clear (APP_ENV=${APP_ENV:-unset})"
     php artisan optimize:clear
 fi
+
+# Last, because everything above runs as root and can leave root-owned files
+# behind (laravel.log, compiled views) that php-fpm could not then write.
+#
+# The ./src bind mount also always lands root:root, no matter what the image
+# sets up at build time — php-fpm's workers run as www-data (see
+# zzz-laravel.conf), so without this every write under storage/ and
+# bootstrap/cache/ (view cache, logs, framework cache) fails. queue/scheduler
+# share this same host volume, so fixing it here covers them too.
+echo "[deploy] fixing storage/bootstrap permissions for www-data"
+chown -R www-data:www-data storage bootstrap/cache
+find storage bootstrap/cache -type d -exec chmod 775 {} +
+find storage bootstrap/cache -type f -exec chmod 664 {} +

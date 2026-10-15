@@ -13,6 +13,14 @@
 # reads scripts lazily line by line.
 set -euo pipefail
 
+# Two deploys at once would race on git, compose and the bootstrap. A second
+# invocation waits for the lock for up to 10 minutes, then gives up.
+exec 9>"${TMPDIR:-/tmp}/tv-tracker-deploy.lock"
+if ! flock -w 600 9; then
+  echo "ERROR: another deploy is still running" >&2
+  exit 1
+fi
+
 main() {
   local root_dir branch
   root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -68,13 +76,15 @@ main() {
 
   # --- 4. Smoke test ---------------------------------------------------------
   # Hit Laravel's built-in /up health route through nginx.
-  local url
-  url="http://localhost:$(docker compose port nginx 80 | cut -d: -f2)/up"
+  local url hostport
+  hostport="$(docker compose port nginx 80)"
+  url="http://localhost:${hostport##*:}/up"
   if curl -fsS -o /dev/null --max-time 15 "$url"; then
     echo "[deploy] /up OK — deployed ${new:0:7}"
   else
     echo "ERROR: health check $url failed" >&2
     docker compose logs --tail 50 app >&2
+    echo "To roll back:  git reset --hard ${old} && bash script/deploy.sh" >&2
     exit 1
   fi
 }

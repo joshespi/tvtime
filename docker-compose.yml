@@ -24,7 +24,6 @@ x-app-env: &app-env
   MAIL_MAILER: ${MAIL_MAILER:-log}
   MAIL_HOST: ${MAIL_HOST:-smtp-relay.brevo.com}
   MAIL_PORT: ${MAIL_PORT:-587}
-  MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
   MAIL_USERNAME: ${MAIL_USERNAME}
   MAIL_PASSWORD: ${MAIL_PASSWORD}
   MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
@@ -109,7 +108,7 @@ services:
     command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--max-time=3600"]
 
   nginx:
-    image: nginx:alpine
+    image: nginx:1-alpine
     container_name: tv-tracker-nginx
     restart: always
     ports:
