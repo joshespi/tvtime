@@ -26,6 +26,7 @@
              — so without the <server> entries below, the stale container values silently
              win and tests run against the live MariaDB dev database with APP_ENV=local. -->
         <env name="APP_ENV" value="testing" force="true"/>
+        <env name="TMDB_API_KEY" value="test" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4" force="true"/>
         <env name="BROADCAST_CONNECTION" value="null" force="true"/>
@@ -36,9 +37,6 @@
         <env name="MAIL_MAILER" value="array" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync" force="true"/>
         <env name="SESSION_DRIVER" value="array" force="true"/>
-        <env name="PULSE_ENABLED" value="false" force="true"/>
-        <env name="TELESCOPE_ENABLED" value="false" force="true"/>
-        <env name="NIGHTWATCH_ENABLED" value="false" force="true"/>
 
         <server name="APP_ENV" value="testing"/>
         <server name="APP_MAINTENANCE_DRIVER" value="file"/>
@@ -51,8 +49,5 @@
         <server name="MAIL_MAILER" value="array"/>
         <server name="QUEUE_CONNECTION" value="sync"/>
         <server name="SESSION_DRIVER" value="array"/>
-        <server name="PULSE_ENABLED" value="false"/>
-        <server name="TELESCOPE_ENABLED" value="false"/>
-        <server name="NIGHTWATCH_ENABLED" value="false"/>
     </php>
 </phpunit>

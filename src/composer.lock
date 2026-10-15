@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e4df61995b54380603890e8b86d4c154",
+    "content-hash": "644e642e2f6287acab8fa3986e88afeb",
     "packages": [
         {
             "name": "brick/math",
@@ -6237,12 +6237,12 @@
             "version": "v5.6.4",
             "source": {
                 "type": "git",
-                "url": "https://github.com/vlucas/phpdotenv.git",
+                "url": "https://github.com/phpdotenv/phpdotenv.git",
                 "reference": "416df702837983f8d5ff48c9c3fee4f5f57b980b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vlucas/phpdotenv/zipball/416df702837983f8d5ff48c9c3fee4f5f57b980b",
+                "url": "https://api.github.com/repos/phpdotenv/phpdotenv/zipball/416df702837983f8d5ff48c9c3fee4f5f57b980b",
                 "reference": "416df702837983f8d5ff48c9c3fee4f5f57b980b",
                 "shasum": ""
             },
@@ -6727,67 +6727,6 @@
                 "source": "https://github.com/laravel/agent-detector"
             },
             "time": "2026-04-29T18:32:34+00:00"
-        },
-        {
-            "name": "laravel/breeze",
-            "version": "v2.4.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/breeze.git",
-                "reference": "4f20e7b2cc8d25daa85d8647241a89c8e0930305"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/breeze/zipball/4f20e7b2cc8d25daa85d8647241a89c8e0930305",
-                "reference": "4f20e7b2cc8d25daa85d8647241a89c8e0930305",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/console": "^11.0|^12.0|^13.0",
-                "illuminate/filesystem": "^11.0|^12.0|^13.0",
-                "illuminate/support": "^11.0|^12.0|^13.0",
-                "illuminate/validation": "^11.0|^12.0|^13.0",
-                "php": "^8.2.0",
-                "symfony/console": "^7.0|^8.0"
-            },
-            "require-dev": {
-                "laravel/framework": "^11.0|^12.0|^13.0",
-                "orchestra/testbench-core": "^9.0|^10.0|^11.0",
-                "phpstan/phpstan": "^2.0"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Laravel\\Breeze\\BreezeServiceProvider"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Laravel\\Breeze\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Taylor Otwell",
-                    "email": "taylor@laravel.com"
-                }
-            ],
-            "description": "Minimal Laravel authentication scaffolding with Blade and Tailwind.",
-            "keywords": [
-                "auth",
-                "laravel"
-            ],
-            "support": {
-                "issues": "https://github.com/laravel/breeze/issues",
-                "source": "https://github.com/laravel/breeze"
-            },
-            "time": "2026-05-14T16:54:25+00:00"
         },
         {
             "name": "laravel/pail",
@@ -8835,5 +8774,8 @@
         "php": "^8.3"
     },
     "platform-dev": {},
+    "platform-overrides": {
+        "php": "8.5.0"
+    },
     "plugin-api-version": "2.9.0"
 }
