@@ -1,6 +1,6 @@
 {
-    "name": "{{ config('app.name', 'TV Tracker') }}",
-    "short_name": "{{ config('app.name', 'TV Tracker') }}",
+    "name": @json(config('app.name', 'TV Tracker')),
+    "short_name": @json(config('app.name', 'TV Tracker')),
     "description": "Track what you're watching.",
     "start_url": "{{ route('dashboard') }}",
     "scope": "/",

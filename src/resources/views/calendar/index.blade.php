@@ -4,7 +4,7 @@
 
             <div class="flex items-center justify-between">
                 <x-action-button :href="route('calendar.index', ['month' => $prevMonth])">
-                    &larr; <span class="hidden sm:inline ms-1">Prev</span>
+                    &larr; <span class="sr-only sm:not-sr-only sm:ms-1">Prev</span>
                 </x-action-button>
 
                 <div class="flex items-center gap-3">
@@ -15,13 +15,13 @@
                 </div>
 
                 <x-action-button :href="route('calendar.index', ['month' => $nextMonth])">
-                    <span class="hidden sm:inline me-1">Next</span> &rarr;
+                    <span class="sr-only sm:not-sr-only sm:me-1">Next</span> &rarr;
                 </x-action-button>
             </div>
 
             <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 px-1">
-                <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-blue-400"></span> Episode airing</span>
-                <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-purple-400"></span> Movie release</span>
+                <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm {{ \App\Support\MediaTypeStyle::classes('show') }}"></span> Episode airing</span>
+                <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm {{ \App\Support\MediaTypeStyle::classes('movie') }}"></span> Movie release</span>
             </div>
 
             {{-- Phones: a month grid of 11px labels is unreadable at 375px, so

@@ -17,12 +17,12 @@
                                 <div class="min-w-0">
                                     <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">
                                         <a href="{{ $entry['link_url'] }}" class="hover:underline">{{ $entry['title'] }}</a>
-                                        <x-media-type-badge :type="$entry['type']" />
+                                        <x-media-type-badge :type="$entry['type']" class="ms-1" />
                                     </p>
                                     @if ($entry['subtitle'])
                                         <p class="text-sm text-gray-500 dark:text-gray-400">{{ $entry['subtitle'] }}</p>
                                     @endif
-                                    <p class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                                         Watched {{ $entry['watched_at']->format('M j, Y') }}
                                     </p>
                                 </div>
@@ -46,7 +46,7 @@
                 </x-card-grid>
 
                 @if ($truncated)
-                    <p class="text-xs text-gray-400 dark:text-gray-500 text-center">Showing your latest {{ $limit }} entries — export the CSV for the full history.</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 text-center">Showing your latest {{ $limit }} entries — export the CSV for the full history.</p>
                 @endif
             @else
                 <x-empty-state>Nothing marked watched yet.</x-empty-state>

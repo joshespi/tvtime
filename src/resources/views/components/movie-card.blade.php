@@ -15,7 +15,7 @@
         <div class="min-w-0">
             <a href="{{ $detailUrl }}"
                class="block font-semibold text-gray-900 dark:text-gray-100 truncate hover:underline">{{ $userMovie->movie->title }}</a>
-            <p class="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide flex items-center gap-2 flex-wrap">
+            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-2 flex-wrap">
                 <span>
                     @if ($userMovie->movie->release_date)
                         {{ $userMovie->movie->release_date->format('Y') }}
@@ -33,7 +33,7 @@
                 <x-countdown :date="$userMovie->movie->release_date" />
             </p>
             @if (! $compact && ! empty($userMovie->movie->genres))
-                <p class="text-xs text-gray-400 dark:text-gray-500 capitalize">{{ implode(', ', $userMovie->movie->genres) }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 capitalize">{{ implode(', ', $userMovie->movie->genres) }}</p>
             @endif
             @if ($seen = $userMovie->seenPhrase())
                 <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-1">&#10003; {{ $seen }}</p>
@@ -42,7 +42,7 @@
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ $userMovie->movie->overview }}</p>
             @endif
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             {{ $slot }}
         </div>
     </div>

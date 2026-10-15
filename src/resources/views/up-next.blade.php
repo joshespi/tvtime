@@ -1,4 +1,4 @@
-<x-app-layout title="Up Next">
+<x-app-layout title="Dashboard">
     <div class="py-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
@@ -8,13 +8,13 @@
                 :action="route('dashboard')" :suggest-url="route('search.suggest')" />
 
             @if ($upNext->isNotEmpty())
-                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Episodes</h3>
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Episodes</h3>
                 <x-card-grid>
                     @foreach ($upNext as $entry)
                         <x-show-episode-card :show="$entry['show']">
                             <x-slot:meta>
                                 <span>{{ $entry['episode']->label() }}</span>
-                                <span class="text-gray-400 dark:text-gray-500">· aired {{ $entry['episode']->air_date?->format('M j, Y') }}</span>
+                                <span class="text-gray-500 dark:text-gray-400">· aired {{ $entry['episode']->air_date?->format('M j, Y') }}</span>
                                 @if ($entry['backlog'] > 0)
                                     <a href="{{ route('shows.show', $entry['show']) }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">+{{ $entry['backlog'] }} more</a>
                                 @endif
@@ -30,7 +30,7 @@
             @endif
 
             @if ($movieWatchlist->isNotEmpty())
-                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Movies to Watch</h3>
+                <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide px-1">Movies to Watch</h3>
                 <x-card-grid>
                     @foreach ($movieWatchlist as $userMovie)
                         <x-movie-card :user-movie="$userMovie" compact>
@@ -42,7 +42,7 @@
 
             @if ($airingSoon->isNotEmpty())
                 <div class="flex items-center justify-between px-1">
-                    <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Airing Soon</h3>
+                    <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Airing Soon</h3>
                     @if ($airingSoonHasMore)
                         <a href="{{ route('airing-soon.index') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">See all</a>
                     @endif

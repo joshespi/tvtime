@@ -1,7 +1,7 @@
-@props(['variant' => 'secondary', 'href' => null])
+@props(['variant' => 'secondary', 'size' => 'md', 'href' => null])
 
 @php
-    $classes = \App\Support\ButtonStyle::classes($variant);
+    $classes = \App\Support\ButtonStyle::classes($variant, $size);
 @endphp
 
 @if ($href)

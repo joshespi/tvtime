@@ -24,7 +24,7 @@
                             @endforeach
                         </ul>
                     @else
-                        <p class="mt-2 text-sm text-gray-400 dark:text-gray-500">Nothing tracked yet.</p>
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Nothing tracked yet.</p>
                     @endif
                 </x-card>
 
@@ -40,7 +40,7 @@
                             @endforeach
                         </ul>
                     @else
-                        <p class="mt-2 text-sm text-gray-400 dark:text-gray-500">Not enough data yet.</p>
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Not enough data yet.</p>
                     @endif
                 </x-card>
             </div>

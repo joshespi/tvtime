@@ -27,7 +27,7 @@
             @endif
         </p>
         @if (! empty($genres))
-            <p class="text-xs text-gray-400 dark:text-gray-500 capitalize mt-1">{{ implode(', ', $genres) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 capitalize mt-1">{{ implode(', ', $genres) }}</p>
         @endif
         @if ($overview)
             <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{{ $overview }}</p>

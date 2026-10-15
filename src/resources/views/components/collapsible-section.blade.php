@@ -54,7 +54,7 @@
 
     <div class="pt-3 space-y-4">
         @if ($description)
-            <p class="text-xs text-gray-400 dark:text-gray-500 px-1">{{ $description }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 px-1">{{ $description }}</p>
         @endif
         {{ $slot }}
     </div>

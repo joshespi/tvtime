@@ -15,7 +15,7 @@
         <input type="hidden" name="type" value="{{ $type }}">
         <input type="hidden" name="external_id" value="{{ $tmdbId }}">
         <button type="submit" :disabled="status === 'loading' || status === 'done'"
-                class="{{ \App\Support\ButtonStyle::BASE }} gap-1 disabled:opacity-75"
+                class="{{ \App\Support\ButtonStyle::base() }} gap-1 disabled:opacity-75"
                 :class="status === 'done' ? @js(\App\Support\ButtonStyle::variant('success')) : @js(\App\Support\ButtonStyle::variant($variant))">
             <span x-show="status === 'idle' || status === 'error'">{{ $label }}</span>
             <span x-show="status === 'loading'">Working&hellip;</span>

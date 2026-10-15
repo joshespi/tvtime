@@ -13,8 +13,10 @@ class AppLayout extends Component
      * @param  string|null  $heading  On-page <h2> when it should differ from
      *                                $title; pages needing markup in the heading
      *                                pass a `header` slot instead.
+     * @param  string  $width  Tailwind max-width for the header row, so a narrow
+     *                         page's title lines up with its content.
      */
-    public function __construct(public ?string $title = null, public ?string $heading = null) {}
+    public function __construct(public ?string $title = null, public ?string $heading = null, public string $width = 'max-w-7xl') {}
 
     /**
      * Get the view / contents that represents the component.

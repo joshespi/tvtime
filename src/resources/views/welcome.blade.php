@@ -16,20 +16,11 @@
                     <x-theme-toggle />
 
                     @auth
-                        <a href="{{ url('/dashboard') }}"
-                           class="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition">
-                            Dashboard
-                        </a>
+                        <x-action-button variant="primary" :href="url('/dashboard')">Dashboard</x-action-button>
                     @else
-                        <a href="{{ route('login') }}"
-                           class="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                            Log in
-                        </a>
+                        <x-action-button :href="route('login')">Log in</x-action-button>
                         @if (Route::has('register'))
-                            <a href="{{ route('register') }}"
-                               class="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 transition">
-                                Sign up
-                            </a>
+                            <x-action-button variant="primary" :href="route('register')">Sign up</x-action-button>
                         @endif
                     @endauth
                 </nav>
@@ -48,21 +39,12 @@
                 </p>
                 <div class="mt-8 flex items-center justify-center gap-3">
                     @auth
-                        <a href="{{ url('/dashboard') }}"
-                           class="inline-flex items-center px-5 py-2.5 rounded-md text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition">
-                            Go to your dashboard
-                        </a>
+                        <x-action-button variant="primary" size="lg" :href="url('/dashboard')">Go to your dashboard</x-action-button>
                     @else
                         @if (Route::has('register'))
-                            <a href="{{ route('register') }}"
-                               class="inline-flex items-center px-5 py-2.5 rounded-md text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition">
-                                Get started — it's free
-                            </a>
+                            <x-action-button variant="primary" size="lg" :href="route('register')">Get started — it's free</x-action-button>
                         @endif
-                        <a href="{{ route('login') }}"
-                           class="inline-flex items-center px-5 py-2.5 rounded-md text-sm font-semibold text-gray-700 dark:text-gray-300 ring-1 ring-gray-300 dark:ring-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-                            Log in
-                        </a>
+                        <x-action-button size="lg" :href="route('login')">Log in</x-action-button>
                     @endauth
                 </div>
             </section>
@@ -111,7 +93,7 @@
         </main>
 
         <footer class="border-t border-gray-200 dark:border-gray-800">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                 {{ config('app.name', 'TV Tracker') }} &middot;
                 <a href="https://github.com/joshespi/tvtime" rel="noopener" class="hover:underline">open source</a>
             </div>

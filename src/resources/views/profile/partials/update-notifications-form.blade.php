@@ -9,6 +9,9 @@
         </p>
     </header>
 
+    @if (! config('webpush.vapid.public_key'))
+        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">{{ __('Push notifications are not configured on this server.') }}</p>
+    @else
     <div class="mt-4"
          x-data="pushNotifications(@js(config('webpush.vapid.public_key')), @js(route('push-subscriptions.store')), @js(route('push-subscriptions.destroy')))">
         <template x-if="!supported">
@@ -20,7 +23,7 @@
         <template x-if="supported">
             <div class="flex items-center gap-4">
                 <button type="button" @click="toggle()" :disabled="loading"
-                        class="{{ \App\Support\ButtonStyle::BASE }} disabled:opacity-50"
+                        class="{{ \App\Support\ButtonStyle::base() }}"
                         :class="subscribed ? @js(\App\Support\ButtonStyle::variant('secondary')) : @js(\App\Support\ButtonStyle::variant('primary'))">
                     <span x-show="!loading" x-text="subscribed ? 'Disable notifications' : 'Enable notifications'"></span>
                     <span x-show="loading">Working&hellip;</span>
@@ -29,4 +32,5 @@
             </div>
         </template>
     </div>
+    @endif
 </section>

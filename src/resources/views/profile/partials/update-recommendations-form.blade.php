@@ -21,14 +21,6 @@
             Show recommendations on my dashboard
         </label>
 
-        @if (session('status') === 'recommendations-updated')
-            <p
-                x-data="{ show: true }"
-                x-show="show"
-                x-transition
-                x-init="setTimeout(() => show = false, 2000)"
-                class="mt-2 text-sm text-gray-600 dark:text-gray-400"
-            >{{ __('Saved.') }}</p>
-        @endif
+        <x-saved-flash status="recommendations-updated" class="mt-2" />
     </form>
 </section>

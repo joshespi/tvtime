@@ -25,13 +25,18 @@ self.addEventListener('push', (event) => {
         return;
     }
 
-    const payload = event.data.json();
+    let payload;
+    try {
+        payload = event.data.json();
+    } catch (error) {
+        return;
+    }
 
     event.waitUntil(
         self.registration.showNotification(payload.title || 'TV Tracker', {
             body: payload.body,
             icon: payload.icon || '/icon-192.png',
-            badge: payload.badge,
+            badge: payload.badge || '/icon-192.png',
             tag: payload.tag,
             data: payload.data,
         })

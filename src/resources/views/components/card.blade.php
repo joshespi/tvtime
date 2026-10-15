@@ -6,6 +6,6 @@
      silently drift apart. Padding is a prop rather than a merged class so a
      caller that wants different padding replaces it outright instead of
      emitting two competing values. --}}
-<div {{ $attributes->merge(['class' => 'bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 sm:rounded-xl '.$padding]) }}>
+<div {{ $attributes->merge(['class' => 'bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 rounded-xl '.$padding]) }}>
     {{ $slot }}
 </div>

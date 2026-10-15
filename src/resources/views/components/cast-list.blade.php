@@ -2,12 +2,12 @@
 
 @if (! empty($cast))
     <div class="mt-4">
-        <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Cast</h3>
+        <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Cast</h3>
         <div class="flex gap-3 overflow-x-auto pb-1">
             @foreach ($cast as $member)
                 <div class="shrink-0 w-20 text-center">
                     @if ($member['profile_path'] ?? null)
-                        <img src="{{ \App\Support\TmdbImage::url($member['profile_path'], 'w185') }}"
+                        <img src="{{ \App\Support\TmdbImage::url($member['profile_path']) }}"
                              alt="{{ $member['name'] }}" loading="lazy"
                              class="w-16 h-16 mx-auto rounded-full object-cover bg-gray-100 dark:bg-gray-700">
                     @else
@@ -25,7 +25,7 @@
                         @endif
                     </p>
                     @if (! empty($member['character']))
-                        <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate" title="{{ $member['character'] }}">{{ $member['character'] }}</p>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate" title="{{ $member['character'] }}">{{ $member['character'] }}</p>
                     @endif
                 </div>
             @endforeach

@@ -98,7 +98,13 @@ Alpine.data('trackButton', (storeUrl, type, externalId) => ({
         try {
             const response = await sendJson(storeUrl, { type, external_id: externalId });
 
-            const data = await response.json();
+            if (response.status === 419) {
+                this.status = 'error';
+                this.message = 'Session expired — reload the page.';
+                return;
+            }
+
+            const data = await response.json().catch(() => ({}));
 
             if (! response.ok) {
                 this.status = 'error';
@@ -159,9 +165,16 @@ Alpine.data('pushNotifications', (vapidPublicKey, subscribeUrl, unsubscribeUrl) 
             return;
         }
 
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        this.subscribed = subscription !== null;
+        try {
+            // ready never settles when no service worker is registered, so cap the wait.
+            const registration = await Promise.race([
+                navigator.serviceWorker.ready,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000)),
+            ]);
+            this.subscribed = (await registration.pushManager.getSubscription()) !== null;
+        } catch (error) {
+            this.supported = false;
+        }
     },
 
     async toggle() {
@@ -195,7 +208,12 @@ Alpine.data('pushNotifications', (vapidPublicKey, subscribeUrl, unsubscribeUrl) 
             applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
         });
 
-        await sendJson(subscribeUrl, subscription.toJSON());
+        const response = await sendJson(subscribeUrl, subscription.toJSON());
+
+        if (! response.ok) {
+            await subscription.unsubscribe();
+            throw new Error('Could not save the subscription. Reload and try again.');
+        }
 
         this.subscribed = true;
     },
@@ -212,7 +230,11 @@ Alpine.data('pushNotifications', (vapidPublicKey, subscribeUrl, unsubscribeUrl) 
         const endpoint = subscription.endpoint;
         await subscription.unsubscribe();
 
-        await sendJson(unsubscribeUrl, { endpoint }, 'DELETE');
+        const response = await sendJson(unsubscribeUrl, { endpoint }, 'DELETE');
+
+        if (! response.ok) {
+            throw new Error('Could not remove the subscription. Reload and try again.');
+        }
 
         this.subscribed = false;
     },
@@ -246,14 +268,6 @@ function inBrowserTab() {
     return ! isInstalled;
 }
 
-// Reported alongside client errors: the whole reason the old fix missed was not
-// knowing what the installed app actually reports here, so record it rather than
-// assume it again.
-function displayMode() {
-    return ['browser', 'minimal-ui', 'standalone', 'fullscreen', 'window-controls-overlay']
-        .find((mode) => window.matchMedia(`(display-mode: ${mode})`).matches) ?? 'unknown';
-}
-
 document.addEventListener('click', (event) => {
     const link = event.target.closest?.('a[href]');
 
@@ -267,42 +281,6 @@ document.addEventListener('click', (event) => {
         link.removeAttribute('target');
     }
 }, true);
-
-// Diagnostic for the installed-app force-close bug: there's no console access on
-// the device, so beacon any uncaught error/rejection to the server instead.
-// sendBeacon (not fetch) because it's designed to still deliver even if the page
-// is mid-navigation or being torn down — exactly the moment this needs to catch.
-function reportClientError(payload) {
-    try {
-        navigator.sendBeacon(
-            '/client-errors',
-            new Blob([JSON.stringify({ ...payload, url: location.href, display_mode: displayMode() })], {
-                type: 'application/json',
-            })
-        );
-    } catch (e) {
-        // sendBeacon itself is best-effort; nothing more we can do if it throws.
-    }
-}
-
-window.addEventListener('error', (event) => {
-    reportClientError({
-        type: 'error',
-        message: event.message,
-        source: event.filename,
-        line: event.lineno,
-        column: event.colno,
-        stack: event.error?.stack,
-    });
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-    reportClientError({
-        type: 'unhandledrejection',
-        message: event.reason?.message || String(event.reason),
-        stack: event.reason?.stack,
-    });
-});
 
 // Stops a double-tap from posting a form twice: once a form is on its way, its
 // submit buttons go dead. Runs in the bubble phase, so a form whose own handler
@@ -337,5 +315,16 @@ window.addEventListener('pageshow', (event) => {
         button.classList.remove('opacity-60', 'cursor-wait');
     });
 });
+
+// Wired to the per-episode watched forms on the show page: confirm→mark everything
+// before it too, decline→mark just this episode.
+window.tvTracker = {
+    confirmMarkWatched(form) {
+        if (confirm('Mark the unwatched episodes before this one as watched too?')) {
+            form.action = form.dataset.markThroughUrl;
+        }
+        return true;
+    },
+};
 
 Alpine.start();

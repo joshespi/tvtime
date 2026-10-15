@@ -10,7 +10,7 @@
         <div class="min-w-0">
             <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">
                 <a href="{{ $detailUrl }}" class="hover:underline">{{ $result['title'] }}</a>
-                <x-media-type-badge :type="$result['type']" />
+                <x-media-type-badge :type="$result['type']" class="ms-1" />
             </p>
             <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
                 @if ($result['date'])
@@ -21,7 +21,7 @@
                 @endif
             </p>
             @if (! empty($result['genres']))
-                <p class="text-xs text-gray-400 dark:text-gray-500 capitalize">{{ implode(', ', $result['genres']) }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 capitalize">{{ implode(', ', $result['genres']) }}</p>
             @endif
             @if ($result['overview'])
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ $result['overview'] }}</p>
@@ -53,7 +53,7 @@
                         @csrf
                         <input type="hidden" name="type" value="{{ $result['type'] }}">
                         <input type="hidden" name="tmdb_id" value="{{ $result['id'] }}">
-                        <button type="submit" class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:underline">
+                        <button type="submit" class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:underline">
                             Not interested
                         </button>
                     </form>
