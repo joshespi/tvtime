@@ -10,7 +10,7 @@ class PushSubscriptionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'endpoint' => ['required', 'string'],
+            'endpoint' => ['required', 'string', 'max:500'],
             'keys.p256dh' => ['required', 'string'],
             'keys.auth' => ['required', 'string'],
         ]);
@@ -27,7 +27,7 @@ class PushSubscriptionController extends Controller
     public function destroy(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'endpoint' => ['required', 'string'],
+            'endpoint' => ['required', 'string', 'max:500'],
         ]);
 
         $request->user()->deletePushSubscription($validated['endpoint']);

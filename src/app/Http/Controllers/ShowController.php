@@ -101,11 +101,13 @@ class ShowController extends Controller
             'status' => ['required', Rule::enum(TrackingStatus::class)],
         ]);
 
-        $status = $request->enum('status', TrackingStatus::class);
+        // Settled before saving, so picking Finished with episodes still unwatched
+        // (or the reverse) is one write rather than the pick and then its correction.
+        $userShow->status = $request->enum('status', TrackingStatus::class);
+        $userShow->refreshFinishedStatus();
+        $userShow->save();
 
-        $userShow->update(['status' => $status]);
-
-        return back()->with('status', "\"{$userShow->show->title}\" is now marked {$status->label()}.");
+        return back()->with('status', "\"{$userShow->show->title}\" is now marked {$userShow->status->label()}.");
     }
 
     public function updateRating(Request $request, UserShow $userShow): RedirectResponse
@@ -117,8 +119,9 @@ class ShowController extends Controller
     {
         Gate::authorize('delete', $userShow);
 
+        $title = $userShow->show->title;
         $userShow->delete();
 
-        return redirect()->route('shows.index')->with('status', 'Show removed from your list.');
+        return redirect()->route('shows.index')->with('status', "\"{$title}\" removed from your list.");
     }
 }

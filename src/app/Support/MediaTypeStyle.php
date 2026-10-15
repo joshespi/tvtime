@@ -4,7 +4,7 @@ namespace App\Support;
 
 /**
  * The show/movie colour pair and wording, in one place — same reasoning as
- * [[ButtonStyle]]. It lives here rather than inside <x-media-type-badge>
+ * ButtonStyle. It lives here rather than inside <x-media-type-badge>
  * because the search typeahead renders its badge client-side (Alpine picks the
  * palette from the suggestion's type) and so needs the class strings as values,
  * and because the calendar paints its day chips with the same two colours.
@@ -29,5 +29,11 @@ class MediaTypeStyle
     public static function label(string $type): string
     {
         return self::LABELS[$type] ?? self::LABELS['show'];
+    }
+
+    /** The user's own list for this type — where a catalog page belongs in the nav. */
+    public static function indexRoute(string $type): string
+    {
+        return $type === 'movie' ? 'movies.index' : 'shows.index';
     }
 }

@@ -12,12 +12,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('movie_id')->constrained()->cascadeOnDelete();
-            // Movies have no sub-items, so "watched" lives directly on the pivot.
+            // Each watch lives in movie_watches (see later migrations); this is the
+            // latest one, denormalized and kept in sync by UserMovie::syncWatchedAt().
             $table->timestamp('watched_at')->nullable();
             $table->timestamps();
 
             $table->unique(['user_id', 'movie_id']);
-            // Watchlist and history both filter this user's rows by watched_at.
+            // The watchlist filters this user's rows by watched_at being null.
             $table->index(['user_id', 'watched_at']);
         });
     }

@@ -60,6 +60,15 @@ class UserShow extends Model
         $this->refreshFinishedStatus();
     }
 
+    public function isWatched(Episode $episode): bool
+    {
+        return WatchStatus::query()
+            ->where('user_id', $this->user_id)
+            ->where('episode_id', $episode->id)
+            ->whereNotNull('watched_at')
+            ->exists();
+    }
+
     public function markUnwatched(Episode $episode): void
     {
         WatchStatus::query()

@@ -6,7 +6,6 @@ use App\Http\Controllers\Concerns\TogglesWatched;
 use App\Models\Episode;
 use App\Models\Show;
 use App\Models\UserShow;
-use App\Models\WatchStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -19,11 +18,7 @@ class WatchStatusController extends Controller
         $userShow = $this->trackedOrFail($request, $episode);
 
         // Only looked up when the request doesn't name the state it wants.
-        $watched = $this->requestedWatched($request, fn () => WatchStatus::query()
-            ->where('user_id', $userShow->user_id)
-            ->where('episode_id', $episode->id)
-            ->whereNotNull('watched_at')
-            ->exists());
+        $watched = $this->requestedWatched($request, fn () => $userShow->isWatched($episode));
 
         $watched ? $userShow->markWatched([$episode->id]) : $userShow->markUnwatched($episode);
 
@@ -41,10 +36,11 @@ class WatchStatusController extends Controller
      */
     public function markThrough(Request $request, Episode $episode): RedirectResponse
     {
-        $this->trackedOrFail($request, $episode)
-            ->markWatched(Episode::query()->upThrough($episode)->pluck('id'));
+        $userShow = $this->trackedOrFail($request, $episode);
+        $userShow->markWatched(Episode::query()->upThrough($episode)->pluck('id'));
 
-        return $this->backToEpisode($episode);
+        return $this->backToEpisode($episode)
+            ->with('status', "{$userShow->show->title} marked watched through {$episode->code()}.");
     }
 
     /**
@@ -54,7 +50,7 @@ class WatchStatusController extends Controller
      */
     public function markSeason(Request $request, Show $show, int $season): RedirectResponse
     {
-        $userShow = $request->user()->trackedShow($show) ?? abort(404);
+        $userShow = $request->user()->trackedShow($show) ?? abort(403);
 
         $episodeIds = $show->episodes()
             ->where('season', $season)

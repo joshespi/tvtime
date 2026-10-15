@@ -35,10 +35,10 @@ class UserMovie extends Model
         return $this->belongsTo(Movie::class);
     }
 
-    /** Every completed viewing, newest first. */
+    /** Every completed viewing. Order at the call site; a default ORDER BY taxes every withCount/whereHas subquery. */
     public function watches(): HasMany
     {
-        return $this->hasMany(MovieWatch::class)->orderByDesc('watched_at');
+        return $this->hasMany(MovieWatch::class);
     }
 
     /** Movies waiting to be watched — including ones re-queued by "Watch again". */
@@ -102,8 +102,8 @@ class UserMovie extends Model
     public function markUnwatched(): void
     {
         DB::transaction(function () {
-            // watches() is already newest-first, so this is the most recent one.
-            $this->watches()->first()?->delete();
+            // The most recent viewing.
+            $this->watches()->latest('watched_at')->first()?->delete();
 
             $this->syncWatchedAt();
         });
@@ -116,7 +116,7 @@ class UserMovie extends Model
      */
     public function syncWatchedAt(): void
     {
-        $this->update(['watched_at' => $this->watches()->first()?->watched_at]);
+        $this->update(['watched_at' => $this->watches()->max('watched_at')]);
     }
 
     /** Puts a finished movie back on the watchlist, keeping its watch history. */

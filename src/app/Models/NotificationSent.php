@@ -5,7 +5,6 @@ namespace App\Models;
 use Database\Factories\NotificationSentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class NotificationSent extends Model
 {
@@ -21,11 +20,5 @@ class NotificationSent extends Model
         return [
             'sent_at' => 'datetime',
         ];
-    }
-
-    /** The episode or movie this notification was about. */
-    public function subject(): MorphTo
-    {
-        return $this->morphTo();
     }
 }

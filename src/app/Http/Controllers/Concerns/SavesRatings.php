@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Concerns;
 
+use App\Models\UserMovie;
+use App\Models\UserShow;
 use App\Support\Rating;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Gate;
 trait SavesRatings
 {
     /** Sets or clears the user's rating/note for a tracked title — independent of TMDB's own vote_average. */
-    protected function saveRating(Request $request, Model $tracked): RedirectResponse
+    protected function saveRating(Request $request, UserShow|UserMovie $tracked): RedirectResponse
     {
         Gate::authorize('update', $tracked);
 

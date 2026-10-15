@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('show_id')->constrained()->cascadeOnDelete();
-            $table->string('status')->default('watching'); // watching, paused, dropped
+            $table->string('status')->default('watching'); // watching, finished, paused, dropped
             $table->timestamps();
 
             $table->unique(['user_id', 'show_id']);

@@ -94,7 +94,7 @@ class MovieController extends Controller
             $userMovie->syncWatchedAt();
         });
 
-        return back();
+        return back()->with('status', 'Viewing removed from your history.');
     }
 
     public function updateRating(Request $request, UserMovie $userMovie): RedirectResponse
@@ -106,8 +106,9 @@ class MovieController extends Controller
     {
         Gate::authorize('delete', $userMovie);
 
+        $title = $userMovie->movie->title;
         $userMovie->delete();
 
-        return redirect()->route('movies.index')->with('status', 'Movie removed from your list.');
+        return redirect()->route('movies.index')->with('status', "\"{$title}\" removed from your list.");
     }
 }

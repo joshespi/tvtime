@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 /**
  * Shared single-genre filter used by both /shows and /movies — same "All
  * genres" default and matching logic, just pointed at different genre
- * accessors. Mirrors [[WatchlistSort]]'s shape.
+ * accessors. Mirrors WatchlistSort's shape.
  */
 class GenreFilter
 {
@@ -38,7 +38,7 @@ class GenreFilter
      *
      * @param  array<string, string>  $options  From options(), keyed by genre.
      */
-    public static function resolve(?string $genre, array $options): ?string
+    private static function resolve(?string $genre, array $options): ?string
     {
         if ($genre === null || $genre === '') {
             return null;
@@ -53,14 +53,14 @@ class GenreFilter
      * shrink once a genre is picked. The empty-string key is the "no filter"
      * option, kept here so the wording lives beside the values it labels.
      */
-    public static function options(Collection $items, Closure $genresAccessor): array
+    private static function options(Collection $items, Closure $genresAccessor): array
     {
         $genres = $items->flatMap($genresAccessor)->unique()->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()->all();
 
         return ['' => 'All genres'] + array_combine($genres, $genres);
     }
 
-    public static function apply(Collection $items, ?string $genre, Closure $genresAccessor): Collection
+    private static function apply(Collection $items, ?string $genre, Closure $genresAccessor): Collection
     {
         if ($genre === null) {
             return $items;

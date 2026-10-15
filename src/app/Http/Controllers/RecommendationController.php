@@ -12,11 +12,11 @@ class RecommendationController extends Controller
     {
         $validated = $request->validate([
             'type' => ['required', 'in:show,movie'],
-            'tmdb_id' => ['required', 'string'],
+            'tmdb_id' => ['required', 'integer', 'min:1'],
         ]);
 
         $request->user()->dismissedRecommendations()->firstOrCreate($validated);
 
-        return back();
+        return back()->with('status', "Got it, that won't be suggested again.");
     }
 }
