@@ -115,22 +115,17 @@ class CatalogSearchService
             return null;
         }
 
-        // Same sentence the movie cards render, so a title can't describe itself
-        // one way in search results and another on the watchlist.
-        $seen = $userMovie->seenPhrase();
+        $state = ['label' => $userMovie->stateLabel()];
 
-        if (! $userMovie->isFinished()) {
-            return ['label' => 'On your watchlist'.($seen ? " · {$seen}" : '')];
-        }
-
-        return [
-            'label' => (string) $seen,
-            'action' => [
+        if ($userMovie->isFinished()) {
+            $state['action'] = [
                 'label' => 'Watch again',
                 'url' => route('movies.watch-again', $userMovie),
                 'post' => true,
-            ],
-        ];
+            ];
+        }
+
+        return $state;
     }
 
     /** @return array{label: string, action?: array{label: string, url: string, post: bool}}|null */

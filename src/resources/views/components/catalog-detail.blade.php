@@ -8,7 +8,7 @@
     $date = $details['first_air_date'] ?? $details['release_date'] ?? null;
 @endphp
 
-<x-app-layout :title="$details['title']" width="max-w-3xl">
+<x-app-layout :title="$details['title']" width="max-w-3xl" spacing="space-y-6">
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
             {{ $details['title'] }}
@@ -16,26 +16,20 @@
         </h2>
     </x-slot>
 
-    <div class="py-10">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <x-status-banner />
 
-            <x-status-banner />
+    <x-text-link :href="route(\App\Support\MediaTypeStyle::indexRoute($type))">&larr; Back</x-text-link>
 
-            <a href="{{ route(\App\Support\MediaTypeStyle::indexRoute($type)) }}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">&larr; Back</a>
+    <x-title-summary :poster-url="\App\Support\TmdbImage::url($details['poster_path'], \App\Support\TmdbImage::SIZE_DETAIL)"
+                     :title="$details['title']" :date="$date" :status="$details['status']"
+                     :vote-average="$details['vote_average']" :genres="$details['genres']"
+                     :overview="$details['overview']">
+        {{ $slot }}
+        <x-trailer-link :trailer-key="$details['trailer_key'] ?? null" />
+        <x-imdb-link :imdb-id="$details['imdb_id'] ?? null" />
+    </x-title-summary>
 
-            <x-title-summary :poster-url="\App\Support\TmdbImage::url($details['poster_path'], \App\Support\TmdbImage::SIZE_DETAIL)"
-                             :title="$details['title']" :date="$date" :status="$details['status']"
-                             :vote-average="$details['vote_average']" :genres="$details['genres']"
-                             :overview="$details['overview']">
-                {{ $slot }}
-                <x-trailer-link :trailer-key="$details['trailer_key'] ?? null" />
-                <x-imdb-link :imdb-id="$details['imdb_id'] ?? null" />
-            </x-title-summary>
+    {{ $after ?? '' }}
 
-            {{ $after ?? '' }}
-
-            <x-cast-list :cast="$details['cast'] ?? []" />
-
-        </div>
-    </div>
+    <x-cast-list :cast="$details['cast'] ?? []" />
 </x-app-layout>

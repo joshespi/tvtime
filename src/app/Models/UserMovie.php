@@ -79,6 +79,19 @@ class UserMovie extends Model
         return WatchCount::seen($this->timesWatched(), $this->watched_at);
     }
 
+    /**
+     * One-line description of where this movie stands for the user — shared by
+     * the search cards and the detail page so they can't word it differently.
+     */
+    public function stateLabel(): string
+    {
+        $seen = $this->seenPhrase();
+
+        return $this->isFinished()
+            ? (string) $seen
+            : 'On your watchlist'.($seen ? " · {$seen}" : '');
+    }
+
     /** Records a completed viewing and moves the movie off the watchlist. */
     public function markWatched(): void
     {

@@ -39,7 +39,7 @@
                             <x-action-button>{{ $action['label'] }}</x-action-button>
                         </form>
                     @else
-                        <a href="{{ $action['url'] }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">{{ $action['label'] }}</a>
+                        <x-text-link :href="$action['url']" size="text-xs">{{ $action['label'] }}</x-text-link>
                     @endif
                 @endif
             </div>
