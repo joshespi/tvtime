@@ -18,7 +18,11 @@
             </header>
 
             <main class="flex-1 min-w-0">
-                {{ $slot }}
+                <div class="py-10">
+                    <div class="{{ $width }} mx-auto px-4 sm:px-6 lg:px-8 {{ $spacing }}">
+                        {{ $slot }}
+                    </div>
+                </div>
             </main>
 
             <footer class="pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-6 text-center text-xs text-gray-500 dark:text-gray-400 space-x-2">

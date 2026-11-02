@@ -15,8 +15,15 @@ class AppLayout extends Component
      *                                pass a `header` slot instead.
      * @param  string  $width  Tailwind max-width for the header row, so a narrow
      *                         page's title lines up with its content.
+     * @param  string  $spacing  Tailwind vertical rhythm between the page's
+     *                           top-level blocks.
      */
-    public function __construct(public ?string $title = null, public ?string $heading = null, public string $width = 'max-w-7xl') {}
+    public function __construct(
+        public ?string $title = null,
+        public ?string $heading = null,
+        public string $width = 'max-w-7xl',
+        public string $spacing = 'space-y-4',
+    ) {}
 
     /**
      * Get the view / contents that represents the component.

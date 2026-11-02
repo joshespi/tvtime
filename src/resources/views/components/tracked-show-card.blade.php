@@ -31,11 +31,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <x-tracking-status-select :user-show="$userShow" />
-            <form method="POST" action="{{ route('shows.destroy', $userShow) }}" onsubmit="return confirm('Remove this show and its watch history? To just stop following it, set its status to Paused or Dropped instead.')">
-                @csrf
-                @method('DELETE')
-                <x-action-button>Remove</x-action-button>
-            </form>
+            <x-remove-button :action="route('shows.destroy', $userShow)" confirm="Remove this show and its watch history? To just stop following it, set its status to Paused or Dropped instead." />
         </div>
     </div>
 </x-card>
