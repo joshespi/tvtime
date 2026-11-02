@@ -20,4 +20,11 @@ return [
         'image_base_url' => 'https://image.tmdb.org/t/p',
     ],
 
+    // app:send-heartbeat. Blank email turns it off; blank url links the dashboard.
+    'heartbeat' => [
+        'email' => env('HEARTBEAT_EMAIL'),
+        'frequency' => env('HEARTBEAT_FREQUENCY', 'weekly'),
+        'url' => env('HEARTBEAT_URL'),
+    ],
+
 ];

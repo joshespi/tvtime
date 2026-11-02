@@ -14,8 +14,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: env('TRUSTED_PROXIES', ''));
     })
     ->withSchedule(function (Schedule $schedule): void {
-        $schedule->command('app:check-new-episodes')->dailyAt('06:00')->timezone('America/Denver')->withoutOverlapping();
-        $schedule->command('app:check-movie-releases')->dailyAt('06:00')->timezone('America/Denver')->withoutOverlapping();
+        $schedule->command('app:check-new-episodes')->dailyAt('06:00')->withoutOverlapping();
+        $schedule->command('app:check-movie-releases')->dailyAt('06:00')->withoutOverlapping();
+
+        $heartbeat = $schedule->command('app:send-heartbeat');
+        if (strtolower((string) config('services.heartbeat.frequency')) === 'monthly') {
+            $heartbeat->monthlyOn(1, '06:00');
+        } else {
+            $heartbeat->weeklyOn(1, '06:00');
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

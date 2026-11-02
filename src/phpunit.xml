@@ -37,6 +37,9 @@
         <env name="MAIL_MAILER" value="array" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync" force="true"/>
         <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="HEARTBEAT_EMAIL" value="" force="true"/>
+        <env name="HEARTBEAT_FREQUENCY" value="weekly" force="true"/>
+        <env name="HEARTBEAT_URL" value="" force="true"/>
 
         <server name="APP_ENV" value="testing"/>
         <server name="APP_MAINTENANCE_DRIVER" value="file"/>
@@ -49,5 +52,8 @@
         <server name="MAIL_MAILER" value="array"/>
         <server name="QUEUE_CONNECTION" value="sync"/>
         <server name="SESSION_DRIVER" value="array"/>
+        <server name="HEARTBEAT_EMAIL" value=""/>
+        <server name="HEARTBEAT_FREQUENCY" value="weekly"/>
+        <server name="HEARTBEAT_URL" value=""/>
     </php>
 </phpunit>

@@ -68,6 +68,9 @@ The stack runs two extra containers next to `app`:
   America/Denver** (the app timezone stays UTC):
   - `app:check-new-episodes` refreshes tracked shows and notifies about episodes airing today.
   - `app:check-movie-releases` refreshes tracked movies and notifies about releases today.
+  - `app:send-heartbeat` emails `HEARTBEAT_EMAIL` a link, weekly (Mondays) or
+    monthly (the 1st) per `HEARTBEAT_FREQUENCY`, so the mail account isn't
+    deactivated for inactivity. Off when `HEARTBEAT_EMAIL` is blank.
 - `queue` (`queue:work`) delivers the mail and push notifications.
 
 There is also a one-off command, `app:backfill-cast-trailer`, which fills

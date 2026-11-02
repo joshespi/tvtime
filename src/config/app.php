@@ -79,6 +79,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Scheduled jobs (bootstrap/app.php) run on local time, not UTC.
+    'schedule_timezone' => 'America/Denver',
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
