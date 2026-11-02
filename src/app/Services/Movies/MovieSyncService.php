@@ -53,7 +53,7 @@ class MovieSyncService
         ]);
     }
 
-    /** Re-fetch cast/trailer for a movie that was tracked before those columns existed. */
+    /** Re-fetch cast/trailer/imdb_id for a movie that was tracked before those columns existed. */
     public function refreshCastAndTrailer(Movie $movie): bool
     {
         return $this->backfillCastAndTrailer($movie, fn (string $id) => $this->tmdb->movie($id));

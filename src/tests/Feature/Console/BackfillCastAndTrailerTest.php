@@ -28,10 +28,22 @@ class BackfillCastAndTrailerTest extends TestCase
         $this->assertSame('tt0903747', $show->imdb_id);
     }
 
-    public function test_it_skips_titles_that_already_have_cast(): void
+    public function test_it_fills_imdb_id_for_titles_that_already_have_cast(): void
+    {
+        $show = Show::factory()->create(['tmdb_id' => '1396', 'cast' => [], 'imdb_id' => null]);
+        $this->fakeTmdbShow();
+
+        $this->artisan('app:backfill-cast-trailer')
+            ->expectsOutputToContain('Backfilled 1 of 1 show(s).')
+            ->assertSuccessful();
+
+        $this->assertSame('tt0903747', $show->refresh()->imdb_id);
+    }
+
+    public function test_it_skips_titles_that_already_have_cast_and_imdb_id(): void
     {
         Http::fake();
-        Movie::factory()->create(['cast' => []]);
+        Movie::factory()->create(['cast' => [], 'imdb_id' => 'tt0133093']);
 
         $this->artisan('app:backfill-cast-trailer')
             ->expectsOutputToContain('Backfilled 0 of 0 movie(s).')

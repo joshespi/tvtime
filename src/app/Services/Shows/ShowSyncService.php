@@ -61,7 +61,7 @@ class ShowSyncService
         ]);
     }
 
-    /** Re-fetch cast/trailer for a show that was tracked before those columns existed. */
+    /** Re-fetch cast/trailer/imdb_id for a show that was tracked before those columns existed. */
     public function refreshCastAndTrailer(Show $show): bool
     {
         return $this->backfillCastAndTrailer($show, fn (string $id) => $this->tmdb->show($id));
