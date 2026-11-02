@@ -33,6 +33,16 @@ class TmdbClient
      */
     private const DETAIL_APPEND = ['credits', 'videos'];
 
+    /**
+     * Shape version of what show()/movie() return. Callers that cache those
+     * payloads put it in their key, so bump it when a mapper gains a field —
+     * otherwise entries cached before the deploy keep serving without it.
+     */
+    private const PAYLOAD_VERSION = 2;
+
+    /** How long a cachedDetails() payload is reused before re-hitting TMDB. */
+    private const DETAIL_CACHE_TTL_HOURS = 6;
+
     private string $baseUrl;
 
     private string $key;
@@ -188,6 +198,23 @@ class TmdbClient
             'vote_average' => $result['vote_average'] ?? null,
             'genres' => [],
         ];
+    }
+
+    /**
+     * show()/movie() with the default append, reused for a few hours — for
+     * previews of titles that aren't stored locally. The key carries
+     * PAYLOAD_VERSION so a deploy that adds a field doesn't keep serving
+     * entries cached without it. Misses (null) are not cached by Cache::remember.
+     *
+     * @param  'show'|'movie'  $type
+     */
+    public function cachedDetails(string $type, string $id): ?array
+    {
+        return Cache::remember(
+            'catalog:v'.self::PAYLOAD_VERSION.":{$type}:{$id}",
+            now()->addHours(self::DETAIL_CACHE_TTL_HOURS),
+            fn () => $type === 'movie' ? $this->movie($id) : $this->show($id)
+        );
     }
 
     /** @param  array<int, string>  $append  See show()'s docblock — same rationale applies to movies. */

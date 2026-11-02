@@ -7,7 +7,6 @@ use App\Services\Catalog\CatalogSearchService;
 use App\Services\Shows\TmdbClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 /**
@@ -17,9 +16,6 @@ use Illuminate\View\View;
  */
 class CatalogController extends Controller
 {
-    /** How long a fetched detail page is reused before re-hitting TMDB. */
-    private const CACHE_TTL_HOURS = 6;
-
     public function __construct(
         private readonly TmdbClient $tmdb,
         private readonly CatalogSearchService $catalog,
@@ -45,7 +41,7 @@ class CatalogController extends Controller
             return redirect()->route('shows.show', $userShow->show_id);
         }
 
-        $details = $this->fetch('show', $tmdbId);
+        $details = $this->tmdb->cachedDetails('show', $tmdbId);
 
         abort_if($details === null, 404);
 
@@ -76,7 +72,7 @@ class CatalogController extends Controller
             $userMovie->load('movie');
             $details = $this->detailsFromMovie($userMovie->movie);
         } else {
-            $details = $this->fetch('movie', $tmdbId);
+            $details = $this->tmdb->cachedDetails('movie', $tmdbId);
         }
 
         abort_if($details === null, 404);
@@ -99,14 +95,5 @@ class CatalogController extends Controller
             'trailer_key' => $movie->trailer_key,
             'imdb_id' => $movie->imdb_id,
         ];
-    }
-
-    private function fetch(string $type, string $tmdbId): ?array
-    {
-        return Cache::remember(
-            "catalog:{$type}:{$tmdbId}",
-            now()->addHours(self::CACHE_TTL_HOURS),
-            fn () => $type === 'movie' ? $this->tmdb->movie($tmdbId) : $this->tmdb->show($tmdbId)
-        );
     }
 }

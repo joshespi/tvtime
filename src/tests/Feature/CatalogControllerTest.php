@@ -6,7 +6,6 @@ use App\Models\Movie;
 use App\Models\Show;
 use App\Models\User;
 use App\Models\UserMovie;
-use App\Models\UserShow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\FakesTmdb;
@@ -41,7 +40,7 @@ class CatalogControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
 
         $response = $this->actingAs($user)->get('/catalog/show/1396');
 
@@ -75,7 +74,7 @@ class CatalogControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $movie = Movie::factory()->create(['tmdb_id' => '603', 'title' => 'The Matrix', 'overview' => 'A hacker...']);
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
+        $this->trackMovie($user, $movie);
 
         // Blanket fake with no stubs: a tracked movie's metadata comes from the
         // already-synced local row, not a second TMDB fetch (otherwise this page
