@@ -15,7 +15,7 @@ class WatchStatusController extends Controller
 
     public function toggle(Request $request, Episode $episode): RedirectResponse
     {
-        $userShow = $this->trackedOrFail($request, $episode);
+        $userShow = $this->trackedOrFail($request, $episode->show);
 
         // Only looked up when the request doesn't name the state it wants.
         $watched = $this->requestedWatched($request, fn () => $userShow->isWatched($episode));
@@ -36,8 +36,12 @@ class WatchStatusController extends Controller
      */
     public function markThrough(Request $request, Episode $episode): RedirectResponse
     {
-        $userShow = $this->trackedOrFail($request, $episode);
-        $userShow->markWatched(Episode::query()->upThrough($episode)->pluck('id'));
+        $userShow = $this->trackedOrFail($request, $episode->show);
+        // Only the still-unwatched ones: re-marking a watched episode would reset
+        // its watched_at, shifting history order, yearly counts and streaks.
+        $userShow->markWatched(
+            Episode::query()->upThrough($episode)->unwatchedBy($userShow->user_id)->pluck('id')
+        );
 
         return $this->backToEpisode($episode)
             ->with('status', "{$userShow->show->title} marked watched through {$episode->code()}.");
@@ -50,7 +54,7 @@ class WatchStatusController extends Controller
      */
     public function markSeason(Request $request, Show $show, int $season): RedirectResponse
     {
-        $userShow = $request->user()->trackedShow($show) ?? abort(403);
+        $userShow = $this->trackedOrFail($request, $show);
 
         $episodeIds = $show->episodes()
             ->where('season', $season)
@@ -89,14 +93,15 @@ class WatchStatusController extends Controller
     }
 
     /**
-     * Episode has no owning-user column of its own to check against — a watch
-     * status belongs to the user, not the episode — so there's no Model for
-     * Gate::authorize() to hand a policy. This is the equivalent check: without
-     * it, any authenticated user could POST an arbitrary episode id and record
-     * a watch (and skew their own stats/streaks) for a show they never tracked.
+     * Episodes and shows have no owning-user column of their own to check
+     * against — a watch status belongs to the user, not the catalog row — so
+     * there's no Model for Gate::authorize() to hand a policy. This is the
+     * equivalent check: without it, any authenticated user could POST an
+     * arbitrary episode or show id and record a watch (and skew their own
+     * stats/streaks) for a show they never tracked.
      */
-    private function trackedOrFail(Request $request, Episode $episode): UserShow
+    private function trackedOrFail(Request $request, Show $show): UserShow
     {
-        return $request->user()->trackedShow($episode->show) ?? abort(403);
+        return $request->user()->trackedShow($show) ?? abort(403);
     }
 }

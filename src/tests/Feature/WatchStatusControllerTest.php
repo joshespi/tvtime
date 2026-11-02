@@ -86,7 +86,7 @@ class WatchStatusControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
         $e1 = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1]);
         $e2 = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 2]);
 
@@ -97,11 +97,27 @@ class WatchStatusControllerTest extends TestCase
         $this->assertDatabaseHas('watch_status', ['user_id' => $user->id, 'episode_id' => $e2->id]);
     }
 
+    public function test_mark_through_keeps_the_original_watch_date_of_already_watched_episodes(): void
+    {
+        $user = User::factory()->create();
+        $show = Show::factory()->create();
+        $userShow = $this->trackShow($user, $show);
+        $e1 = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1]);
+        $e2 = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 2]);
+        $original = now()->subYear()->startOfSecond();
+        WatchStatus::factory()->create(['user_id' => $user->id, 'episode_id' => $e1->id, 'watched_at' => $original]);
+
+        $this->actingAs($user)->post("/episodes/{$e2->id}/mark-through");
+
+        $this->assertTrue($original->equalTo(WatchStatus::where('episode_id', $e1->id)->value('watched_at')));
+        $this->assertTrue($userShow->isWatched($e2));
+    }
+
     public function test_watching_the_last_aired_episode_finishes_the_show(): void
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
-        $userShow = UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $userShow = $this->trackShow($user, $show);
         $episode = Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()->subWeek()]);
 
         $this->actingAs($user)->post("/episodes/{$episode->id}/toggle-watched");
@@ -126,7 +142,7 @@ class WatchStatusControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
-        $userShow = UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $userShow = $this->trackShow($user, $show);
         Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->subMonth()]);
         $last = Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 2, 'air_date' => today()->subWeek()]);
 
