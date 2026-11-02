@@ -6,8 +6,6 @@ use App\Models\Episode;
 use App\Models\Movie;
 use App\Models\Show;
 use App\Models\User;
-use App\Models\UserMovie;
-use App\Models\UserShow;
 use App\Models\WatchStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -31,7 +29,7 @@ class UpNextControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create(['title' => 'Breaking Bad']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+        $this->trackShow($user, $show, ['status' => 'watching']);
 
         Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 2, 'air_date' => today()->subDay(), 'title' => 'Second Aired']);
         Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->subWeek(), 'title' => 'First Aired']);
@@ -41,7 +39,7 @@ class UpNextControllerTest extends TestCase
         // eager-load limit(1) instead of one per parent — that bug would pass
         // this test with only one show tracked.
         $otherShow = Show::factory()->create(['title' => 'The Wire']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $otherShow->id, 'status' => 'watching']);
+        $this->trackShow($user, $otherShow, ['status' => 'watching']);
         Episode::factory()->create(['show_id' => $otherShow->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->subWeek(), 'title' => 'Other Show First Aired']);
 
         $response = $this->actingAs($user)->get('/dashboard');
@@ -58,7 +56,7 @@ class UpNextControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+        $this->trackShow($user, $show, ['status' => 'watching']);
         $episode = Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()->subWeek()]);
         WatchStatus::factory()->watched()->create(['user_id' => $user->id, 'episode_id' => $episode->id]);
 
@@ -71,7 +69,7 @@ class UpNextControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'paused']);
+        $this->trackShow($user, $show, ['status' => 'paused']);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()->subWeek()]);
 
         $response = $this->actingAs($user)->get('/dashboard');
@@ -83,7 +81,7 @@ class UpNextControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $movie = Movie::factory()->create(['title' => 'A Movie']);
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
+        $this->trackMovie($user, $movie);
 
         $response = $this->actingAs($user)->get('/dashboard');
 
@@ -95,7 +93,7 @@ class UpNextControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+        $this->trackShow($user, $show, ['status' => 'watching']);
 
         Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->addWeek()]);
         Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 2, 'air_date' => today()->addWeeks(2)]);
@@ -114,7 +112,7 @@ class UpNextControllerTest extends TestCase
 
         foreach (range(1, 4) as $i) {
             $show = Show::factory()->create();
-            UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+            $this->trackShow($user, $show, ['status' => 'watching']);
             Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->addDays($i)]);
         }
 
@@ -132,7 +130,7 @@ class UpNextControllerTest extends TestCase
 
         foreach (range(1, 4) as $i) {
             $show = Show::factory()->create();
-            UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+            $this->trackShow($user, $show, ['status' => 'watching']);
             Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'air_date' => today()->addDays($i)]);
         }
 
@@ -156,7 +154,7 @@ class UpNextControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+        $this->trackShow($user, $show, ['status' => 'watching']);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()->subWeek()]);
 
         $response = $this->actingAs($user)->get('/dashboard');
@@ -168,7 +166,7 @@ class UpNextControllerTest extends TestCase
     {
         $user = User::factory()->create(['recommendations_enabled' => false]);
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
 
         $response = $this->actingAs($user)->get('/dashboard');
 
@@ -180,7 +178,7 @@ class UpNextControllerTest extends TestCase
     {
         $user = User::factory()->create(['recommendations_enabled' => true]);
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
 
         Http::fake([
             'api.themoviedb.org/3/tv/1396/recommendations*' => Http::response([

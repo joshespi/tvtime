@@ -26,7 +26,7 @@ class ShowControllerTest extends TestCase
         $mine = Show::factory()->create(['title' => 'Mine']);
         $theirs = Show::factory()->create(['title' => 'Theirs']);
 
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $mine->id]);
+        $this->trackShow($user, $mine);
         UserShow::factory()->create(['show_id' => $theirs->id]);
 
         $response = $this->actingAs($user)->get('/shows');
@@ -53,8 +53,8 @@ class ShowControllerTest extends TestCase
         $zebra = Show::factory()->create(['title' => 'Zebra']);
         $apple = Show::factory()->create(['title' => 'Apple']);
 
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $zebra->id]);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $apple->id]);
+        $this->trackShow($user, $zebra);
+        $this->trackShow($user, $apple);
 
         $response = $this->actingAs($user)->get('/shows?sort=title');
 
@@ -67,7 +67,7 @@ class ShowControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
         Episode::factory()->create(['show_id' => $show->id, 'season' => 1, 'episode_number' => 1, 'title' => 'Pilot']);
 
         $response = $this->actingAs($user)->get("/shows/{$show->id}");
@@ -91,7 +91,7 @@ class ShowControllerTest extends TestCase
         $current = Show::factory()->create(['title' => 'Still Going']);
 
         UserShow::factory()->finished()->create(['user_id' => $user->id, 'show_id' => $caughtUp->id]);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $current->id]);
+        $this->trackShow($user, $current);
 
         $response = $this->actingAs($user)->get('/shows');
 
@@ -110,7 +110,7 @@ class ShowControllerTest extends TestCase
 
         UserShow::factory()->paused()->create(['user_id' => $user->id, 'show_id' => $apple->id]);
         UserShow::factory()->dropped()->create(['user_id' => $user->id, 'show_id' => $banana->id]);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $zebra->id]);
+        $this->trackShow($user, $zebra);
 
         $response = $this->actingAs($user)->get('/shows?sort=title');
 
@@ -177,8 +177,8 @@ class ShowControllerTest extends TestCase
         $comedy = Show::factory()->create(['title' => 'Comedy Show', 'genres' => ['Comedy']]);
         $drama = Show::factory()->create(['title' => 'Drama Show', 'genres' => ['Drama']]);
 
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $comedy->id]);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $drama->id]);
+        $this->trackShow($user, $comedy);
+        $this->trackShow($user, $drama);
 
         $response = $this->actingAs($user)->get('/shows?genre=Comedy');
 
@@ -190,7 +190,7 @@ class ShowControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create(['title' => 'Comedy Show', 'genres' => ['Comedy']]);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
 
         // A stale ?genre= (its last show was untracked) would otherwise filter the
         // list to nothing while the select fell back to showing "All genres".

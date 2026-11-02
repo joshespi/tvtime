@@ -49,7 +49,7 @@ class HistoryControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $movie = Movie::factory()->create();
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id, 'watched_at' => null]);
+        $this->trackMovie($user, $movie);
 
         $response = $this->actingAs($user)->get('/history');
 

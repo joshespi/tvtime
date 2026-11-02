@@ -71,7 +71,7 @@ class StatsControllerTest extends TestCase
         $user = User::factory()->create();
 
         $show = Show::factory()->create(['genres' => ['Drama', 'Crime']]);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
 
         $movie = Movie::factory()->create(['genres' => ['Drama']]);
         UserMovie::factory()->watched()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);

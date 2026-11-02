@@ -34,7 +34,7 @@ class CheckMovieReleasesTest extends TestCase
 
         $user = User::factory()->create();
         $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()]);
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id, 'watched_at' => null]);
+        $this->trackMovie($user, $movie);
 
         $this->fakeTmdbRefresh('603');
 
@@ -53,7 +53,7 @@ class CheckMovieReleasesTest extends TestCase
 
         $user = User::factory()->create();
         $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()->addWeek()]);
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id, 'watched_at' => null]);
+        $this->trackMovie($user, $movie);
 
         Http::fake([
             'api.themoviedb.org/3/movie/603*' => Http::response([
@@ -90,7 +90,7 @@ class CheckMovieReleasesTest extends TestCase
 
         $user = User::factory()->create();
         $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()]);
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id, 'watched_at' => null]);
+        $this->trackMovie($user, $movie);
 
         NotificationSent::factory()->create([
             'user_id' => $user->id,
@@ -126,7 +126,7 @@ class CheckMovieReleasesTest extends TestCase
 
         $user = User::factory()->create();
         $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()]);
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id, 'watched_at' => null]);
+        $this->trackMovie($user, $movie);
 
         Http::fake(['api.themoviedb.org/3/movie/*' => Http::response(null, 500)]);
 

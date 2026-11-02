@@ -23,7 +23,7 @@ class MovieControllerTest extends TestCase
         $mine = Movie::factory()->create(['title' => 'Mine']);
         $theirs = Movie::factory()->create(['title' => 'Theirs']);
 
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $mine->id]);
+        $this->trackMovie($user, $mine);
         UserMovie::factory()->create(['movie_id' => $theirs->id]);
 
         $response = $this->actingAs($user)->get('/movies');
@@ -157,8 +157,8 @@ class MovieControllerTest extends TestCase
         $action = Movie::factory()->create(['title' => 'Action Movie', 'genres' => ['Action']]);
         $comedy = Movie::factory()->create(['title' => 'Comedy Movie', 'genres' => ['Comedy']]);
 
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $action->id]);
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $comedy->id]);
+        $this->trackMovie($user, $action);
+        $this->trackMovie($user, $comedy);
 
         $response = $this->actingAs($user)->get('/movies?genre=Comedy');
 

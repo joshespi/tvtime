@@ -6,7 +6,6 @@ use App\Models\Episode;
 use App\Models\Movie;
 use App\Models\Show;
 use App\Models\User;
-use App\Models\UserMovie;
 use App\Models\UserShow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -27,11 +26,11 @@ class CalendarControllerTest extends TestCase
         $targetDate = Carbon::now()->startOfMonth()->addDays(4);
 
         $show = Show::factory()->create();
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => $targetDate]);
 
         $movie = Movie::factory()->create(['release_date' => $targetDate]);
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
+        $this->trackMovie($user, $movie);
 
         $response = $this->actingAs($user)->get('/calendar');
 
@@ -86,7 +85,7 @@ class CalendarControllerTest extends TestCase
         $leadingGridDay = Carbon::parse('2030-01-27');
 
         $show = Show::factory()->create();
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => $leadingGridDay]);
 
         $response = $this->actingAs($user)->get('/calendar?month=2030-02');
@@ -125,7 +124,7 @@ class CalendarControllerTest extends TestCase
     {
         $user = User::factory()->create();
         $movie = Movie::factory()->create(['release_date' => today()]);
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
+        $this->trackMovie($user, $movie);
 
         $this->actingAs($user)->get('/calendar')
             ->assertSee(route('catalog.show', ['type' => 'movie', 'tmdbId' => $movie->tmdb_id]), false);

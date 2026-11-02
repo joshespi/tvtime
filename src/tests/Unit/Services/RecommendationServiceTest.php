@@ -5,7 +5,6 @@ namespace Tests\Unit\Services;
 use App\Models\Movie;
 use App\Models\Show;
 use App\Models\User;
-use App\Models\UserMovie;
 use App\Models\UserShow;
 use App\Services\Catalog\RecommendationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,7 +30,7 @@ class RecommendationServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
 
         Http::fake([
             'api.themoviedb.org/3/tv/1396/recommendations*' => Http::response([
@@ -64,10 +63,10 @@ class RecommendationServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
 
         $alreadyTracked = Show::factory()->create(['tmdb_id' => '2']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $alreadyTracked->id]);
+        $this->trackShow($user, $alreadyTracked);
 
         Http::fake([
             'api.themoviedb.org/3/tv/1396/recommendations*' => Http::response([
@@ -89,7 +88,7 @@ class RecommendationServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $movie = Movie::factory()->create(['tmdb_id' => '603']);
-        UserMovie::factory()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
+        $this->trackMovie($user, $movie);
 
         Http::fake([
             'api.themoviedb.org/3/movie/603/recommendations*' => Http::response([
@@ -109,7 +108,7 @@ class RecommendationServiceTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
         $user->dismissedRecommendations()->create(['type' => 'show', 'tmdb_id' => '2']);
 
         Http::fake([
@@ -132,7 +131,7 @@ class RecommendationServiceTest extends TestCase
         // recovered.
         $user = User::factory()->create();
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $this->trackShow($user, $show);
 
         Http::fake([
             'api.themoviedb.org/3/tv/1396/recommendations*' => Http::sequence()

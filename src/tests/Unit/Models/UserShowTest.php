@@ -86,7 +86,7 @@ class UserShowTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
-        $userShow = UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $userShow = $this->trackShow($user, $show);
 
         $userShow->refreshFinishedStatus();
 
@@ -119,7 +119,7 @@ class UserShowTest extends TestCase
     {
         $user = User::factory()->create();
         $show = Show::factory()->create();
-        $userShow = UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id]);
+        $userShow = $this->trackShow($user, $show);
         $episode = Episode::factory()->create([
             'show_id' => $show->id,
             'season' => 1,

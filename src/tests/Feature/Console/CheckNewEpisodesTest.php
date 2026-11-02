@@ -6,7 +6,6 @@ use App\Models\Episode;
 use App\Models\NotificationSent;
 use App\Models\Show;
 use App\Models\User;
-use App\Models\UserShow;
 use App\Notifications\NewEpisodeAired;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -37,7 +36,7 @@ class CheckNewEpisodesTest extends TestCase
 
         $user = User::factory()->create();
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+        $this->trackShow($user, $show, ['status' => 'watching']);
         $episode = Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()]);
 
         $this->fakeTmdbRefresh('1396');
@@ -57,7 +56,7 @@ class CheckNewEpisodesTest extends TestCase
 
         $user = User::factory()->create();
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+        $this->trackShow($user, $show, ['status' => 'watching']);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()->subDay()]);
 
         $this->fakeTmdbRefresh('1396');
@@ -73,7 +72,7 @@ class CheckNewEpisodesTest extends TestCase
 
         $user = User::factory()->create();
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'paused']);
+        $this->trackShow($user, $show, ['status' => 'paused']);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()]);
 
         $this->fakeTmdbRefresh('1396');
@@ -89,7 +88,7 @@ class CheckNewEpisodesTest extends TestCase
 
         $user = User::factory()->create();
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+        $this->trackShow($user, $show, ['status' => 'watching']);
         $episode = Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()]);
 
         NotificationSent::factory()->create([
@@ -126,7 +125,7 @@ class CheckNewEpisodesTest extends TestCase
 
         $user = User::factory()->create();
         $show = Show::factory()->create(['tmdb_id' => '1396']);
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $show->id, 'status' => 'watching']);
+        $this->trackShow($user, $show, ['status' => 'watching']);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()]);
 
         Http::fake(['api.themoviedb.org/3/tv/*' => Http::response(null, 500)]);
