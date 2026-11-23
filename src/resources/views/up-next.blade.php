@@ -47,14 +47,19 @@
         <x-airing-soon-grid :entries="$airingSoon" />
     @endif
 
-    @if ($upNext->isEmpty() && $airingSoon->isEmpty() && $movieWatchlist->isEmpty())
+    @if ($query === '' && $upNext->isEmpty() && $airingSoon->isEmpty() && $movieWatchlist->isEmpty())
         <x-empty-state>
             @if ($hasTracked)
-                <p>Nothing new to watch right now.</p>
-                <x-text-link :href="route('shows.index')">Manage your shows</x-text-link>
+                <p class="flex items-center justify-center gap-2 font-semibold text-gray-900 dark:text-gray-100">
+                    <x-completion-check />
+                    You're caught up
+                </p>
+                <p class="mt-1">Nothing new is ready to watch.</p>
+                <x-text-link :href="route('calendar.index')" class="mt-3 inline-block">View calendar</x-text-link>
             @else
-                <p class="font-medium text-gray-700 dark:text-gray-200">Welcome! Nothing is being tracked yet.</p>
-                <p>Use the search box above to find a show or movie and add it — new episodes and releases will show up here.</p>
+                <p class="font-semibold text-gray-900 dark:text-gray-100">Add your first show or movie</p>
+                <p class="mt-1">Nothing is being tracked yet. New episodes and releases will show up here once you add a title.</p>
+                <x-action-button href="#catalog-search" class="mt-3">Find a show or movie</x-action-button>
             @endif
         </x-empty-state>
     @endif

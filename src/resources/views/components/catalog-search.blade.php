@@ -3,7 +3,7 @@
 <x-card x-data="catalogSearch({{ \Illuminate\Support\Js::from(route('search.suggest')) }})">
     <form method="GET" action="{{ $action }}" class="flex gap-2" x-ref="form" @submit="open = false">
         <div class="relative flex-1">
-            <input type="text" name="q" value="{{ $query }}" x-ref="input" x-model="query"
+            <input type="text" id="catalog-search" name="q" value="{{ $query }}" x-ref="input" x-model="query"
                    @input="onInput()"
                    @keydown.down.prevent="move(1)"
                    @keydown.up.prevent="move(-1)"
@@ -17,7 +17,7 @@
                    :aria-expanded="open.toString()"
                    :aria-activedescendant="highlighted >= 0 ? 'catalog-suggestion-' + highlighted : null"
                    placeholder="Search for a show or movie…"
-                   class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                   class="w-full scroll-mt-6 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
 
             <ul id="catalog-suggestions" role="listbox" x-show="open" x-transition.opacity.duration.100ms
                 class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg ring-1 ring-gray-200 dark:ring-gray-700 rounded-md max-h-80 overflow-auto divide-y divide-gray-100 dark:divide-gray-700">

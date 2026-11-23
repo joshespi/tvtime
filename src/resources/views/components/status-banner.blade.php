@@ -3,17 +3,23 @@
 {{-- Shows its slot when given one, else the flashed status — never for the
      error variant, which would otherwise paint a success message red. --}}
 @php
+    $isError = $variant === 'error';
     $hasSlot = trim((string) $slot) !== '';
-    $fromSession = ! $hasSlot && $variant !== 'error';
+    $fromSession = ! $hasSlot && ! $isError;
     $message = $hasSlot ? $slot : ($fromSession ? session('status') : null);
-    $classes = $variant === 'error'
+    $classes = $isError
         ? 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400'
-        : 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400';
+        : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300';
 @endphp
 
 @if ($message)
-    <div {{ $attributes->merge(['class' => "{$classes} text-sm rounded-lg px-4 py-3 flex items-center justify-between gap-3"]) }}>
-        <span>{{ $message }}</span>
+    <div {{ $attributes->merge(['role' => $isError ? 'alert' : 'status', 'class' => "{$classes} text-sm rounded-lg px-4 py-3 flex items-center justify-between gap-3"]) }}>
+        <div class="flex items-center gap-2">
+            @if (! $isError)
+                <x-completion-check />
+            @endif
+            <span>{{ $message }}</span>
+        </div>
         @if ($fromSession && is_array($undo = session('undo')))
             {{-- Posts the opposite state explicitly, so Undo is exact even if the
                  original request was a toggle. --}}

@@ -14,6 +14,13 @@ Alpine.data('catalogSearch', (suggestUrl) => ({
 
     init() {
         this.query = this.$refs.input.value;
+        // Empty-state "Find a …" links jump to #catalog-search; the hash alone
+        // scrolls but leaves the box unfocused.
+        document.addEventListener('click', (event) => {
+            if (event.target.closest('a[href="#catalog-search"]')) {
+                this.$refs.input.focus();
+            }
+        });
     },
 
     onInput() {

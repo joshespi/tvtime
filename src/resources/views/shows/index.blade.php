@@ -19,8 +19,11 @@
                 <x-tracked-show-card :user-show="$userShow" />
             @endforeach
         </x-card-grid>
-    @elseif (! $hasOtherShelves)
-        <x-empty-state>You're not tracking any shows yet.</x-empty-state>
+    @elseif (! $hasOtherShelves && $query === '')
+        <x-empty-state>
+            <p>You're not tracking any shows yet.</p>
+            <x-action-button href="#catalog-search" class="mt-3">Find a show</x-action-button>
+        </x-empty-state>
     @endif
 
     @if ($finished->isNotEmpty())

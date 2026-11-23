@@ -19,8 +19,11 @@
                 </x-movie-card>
             @endforeach
         </x-card-grid>
-    @else
-        <x-empty-state>Your watchlist is empty.</x-empty-state>
+    @elseif ($query === '')
+        <x-empty-state>
+            <p>Your watchlist is empty.</p>
+            <x-action-button href="#catalog-search" class="mt-3">Find a movie</x-action-button>
+        </x-empty-state>
     @endif
 
     @if ($finished->isNotEmpty())
