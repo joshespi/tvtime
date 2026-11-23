@@ -1,50 +1,56 @@
-<x-app-layout title="Dashboard">
+<x-app-layout title="Dashboard" spacing="space-y-7 sm:space-y-9">
     <x-status-banner />
 
     <x-catalog-search :query="$query" :results="$results"
         :action="route('dashboard')" />
 
     @if ($upNext->isNotEmpty())
-        <x-section-heading>Episodes</x-section-heading>
-        <x-card-grid>
-            @foreach ($upNext as $entry)
-                <x-show-episode-card :show="$entry['show']">
-                    <x-slot:meta>
-                        <span>{{ $entry['episode']->label() }}</span>
-                        <span class="text-gray-500 dark:text-gray-400">· aired {{ $entry['episode']->air_date?->format('M j, Y') }}</span>
-                        @if ($entry['backlog'] > 0)
-                            <x-text-link :href="route('shows.show', $entry['show'])" size="text-xs">+{{ $entry['backlog'] }} more</x-text-link>
-                        @endif
-                    </x-slot:meta>
-                    <form method="POST" action="{{ route('episodes.toggle-watched', $entry['episode']) }}">
-                        @csrf
-                        <input type="hidden" name="watched" value="1">
-                        <x-action-button>Mark watched</x-action-button>
-                    </form>
-                </x-show-episode-card>
-            @endforeach
-        </x-card-grid>
+        <section aria-labelledby="dashboard-episodes" class="space-y-3">
+            <x-section-heading id="dashboard-episodes">Episodes</x-section-heading>
+            <x-card-grid>
+                @foreach ($upNext as $entry)
+                    <x-show-episode-card :show="$entry['show']">
+                        <x-slot:meta>
+                            <span class="basis-full">{{ $entry['episode']->label() }}</span>
+                            <span class="text-xs">Aired {{ $entry['episode']->air_date?->format('M j, Y') }}</span>
+                            @if ($entry['backlog'] > 0)
+                                <x-text-link :href="route('shows.show', $entry['show'])" size="text-xs">+{{ $entry['backlog'] }} more</x-text-link>
+                            @endif
+                        </x-slot:meta>
+                        <form method="POST" action="{{ route('episodes.toggle-watched', $entry['episode']) }}">
+                            @csrf
+                            <input type="hidden" name="watched" value="1">
+                            <x-action-button>Mark watched</x-action-button>
+                        </form>
+                    </x-show-episode-card>
+                @endforeach
+            </x-card-grid>
+        </section>
     @endif
 
     @if ($movieWatchlist->isNotEmpty())
-        <x-section-heading>Movies to Watch</x-section-heading>
-        <x-card-grid>
-            @foreach ($movieWatchlist as $userMovie)
-                <x-movie-card :user-movie="$userMovie" compact>
-                    <x-mark-watched-button :user-movie="$userMovie" />
-                </x-movie-card>
-            @endforeach
-        </x-card-grid>
+        <section aria-labelledby="dashboard-movies" class="space-y-3">
+            <x-section-heading id="dashboard-movies">Movies to Watch</x-section-heading>
+            <x-card-grid>
+                @foreach ($movieWatchlist as $userMovie)
+                    <x-movie-card :user-movie="$userMovie" compact>
+                        <x-mark-watched-button :user-movie="$userMovie" />
+                    </x-movie-card>
+                @endforeach
+            </x-card-grid>
+        </section>
     @endif
 
     @if ($airingSoon->isNotEmpty())
-        <div class="flex items-center justify-between px-1">
-            <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Airing Soon</h3>
-            @if ($airingSoonHasMore)
-                <x-text-link :href="route('airing-soon.index')" size="text-xs">See all</x-text-link>
-            @endif
-        </div>
-        <x-airing-soon-grid :entries="$airingSoon" />
+        <section aria-labelledby="dashboard-airing" class="space-y-3">
+            <div class="flex items-center justify-between gap-3">
+                <x-section-heading id="dashboard-airing">Airing Soon</x-section-heading>
+                @if ($airingSoonHasMore)
+                    <x-text-link :href="route('airing-soon.index')">See all <span aria-hidden="true">&rarr;</span></x-text-link>
+                @endif
+            </div>
+            <x-airing-soon-grid :entries="$airingSoon" />
+        </section>
     @endif
 
     @if ($query === '' && $upNext->isEmpty() && $airingSoon->isEmpty() && $movieWatchlist->isEmpty())

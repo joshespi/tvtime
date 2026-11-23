@@ -1,11 +1,11 @@
 <x-app-layout title="Calendar">
-    <div class="flex items-center justify-between">
+    <x-card padding="p-3 sm:px-5" class="flex items-center justify-between gap-2">
         <x-action-button :href="route('calendar.index', ['month' => $prevMonth])">
             &larr; <span class="sr-only sm:not-sr-only sm:ms-1">Prev</span>
         </x-action-button>
 
-        <div class="flex items-center gap-3">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $month->format('F Y') }}</h3>
+        <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-center">
+            <x-section-heading>{{ $month->format('F Y') }}</x-section-heading>
             @unless ($isCurrentMonth)
                 <x-text-link :href="route('calendar.index')">Today</x-text-link>
             @endunless
@@ -14,7 +14,7 @@
         <x-action-button :href="route('calendar.index', ['month' => $nextMonth])">
             <span class="sr-only sm:not-sr-only sm:me-1">Next</span> &rarr;
         </x-action-button>
-    </div>
+    </x-card>
 
     <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 px-1">
         <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm {{ \App\Support\MediaTypeStyle::classes('show') }}"></span> Episode airing</span>
@@ -57,16 +57,16 @@
     </div>
 
     <x-card padding="" class="hidden sm:block overflow-hidden">
-        <div class="grid grid-cols-7 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide border-b border-gray-100 dark:border-gray-700">
+        <div class="grid grid-cols-7 border-b border-slate-200 bg-slate-50 text-center text-xs font-semibold uppercase tracking-wide text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300">
             @foreach (['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $label)
-                <div class="py-2">{{ $label }}</div>
+                <div class="py-3">{{ $label }}</div>
             @endforeach
         </div>
 
-        <div class="grid grid-cols-7 divide-x divide-y divide-gray-100 dark:divide-gray-700">
+        <div class="grid grid-cols-7 gap-px bg-slate-200 dark:bg-slate-700">
             @foreach ($weeks as $week)
                 @foreach ($week as $day)
-                    <div class="min-h-28 p-2 {{ $day['inMonth'] ? '' : 'bg-gray-50 dark:bg-gray-900/40' }}">
+                    <div class="min-w-0 min-h-28 p-2 {{ $day['isToday'] ? 'bg-indigo-50 dark:bg-[#1c2d4b]' : ($day['inMonth'] ? 'bg-white dark:bg-gray-800' : 'bg-slate-50 dark:bg-gray-900') }}">
                         <p class="text-xs font-medium mb-1 {{ $day['isToday'] ? 'inline-flex items-center justify-center w-5 h-5 rounded-full bg-indigo-600 text-white' : ($day['inMonth'] ? 'text-gray-700 dark:text-gray-300' : 'text-gray-300 dark:text-gray-600') }}">
                             {{ $day['date']->day }}
                         </p>

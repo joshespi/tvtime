@@ -1,8 +1,9 @@
 @props(['query' => '', 'results' => [], 'action'])
 
-<x-card x-data="catalogSearch({{ \Illuminate\Support\Js::from(route('search.suggest')) }})">
-    <form method="GET" action="{{ $action }}" class="flex gap-2" x-ref="form" @submit="open = false">
-        <div class="relative flex-1">
+<x-card padding="p-2 sm:p-3" x-data="catalogSearch({{ \Illuminate\Support\Js::from(route('search.suggest')) }})">
+    <form method="GET" action="{{ $action }}" role="search" class="flex gap-2 sm:gap-3" x-ref="form" @submit="open = false">
+        <div class="relative min-w-0 flex-1">
+            <span aria-hidden="true" class="pointer-events-none absolute start-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-[1.5px] border-current text-slate-500 after:absolute after:-bottom-0.5 after:-end-1 after:h-px after:w-1.5 after:rotate-45 after:bg-current dark:text-slate-400"></span>
             <input type="text" id="catalog-search" name="q" value="{{ $query }}" x-ref="input" x-model="query"
                    @input="onInput()"
                    @keydown.down.prevent="move(1)"
@@ -16,11 +17,11 @@
                    role="combobox" aria-autocomplete="list" aria-controls="catalog-suggestions"
                    :aria-expanded="open.toString()"
                    :aria-activedescendant="highlighted >= 0 ? 'catalog-suggestion-' + highlighted : null"
-                   placeholder="Search for a show or movie…"
-                   class="w-full scroll-mt-6 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                   placeholder="Search shows or movies"
+                   class="h-12 w-full scroll-mt-6 rounded-xl border-slate-200 bg-gray-50 ps-10 pe-3 text-base text-gray-900 placeholder:text-slate-500 focus:border-indigo-500 focus:ring-indigo-500 dark:border-slate-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-slate-400 sm:text-sm">
 
-            <ul id="catalog-suggestions" role="listbox" x-show="open" x-transition.opacity.duration.100ms
-                class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 shadow-lg ring-1 ring-gray-200 dark:ring-gray-700 rounded-md max-h-80 overflow-auto divide-y divide-gray-100 dark:divide-gray-700">
+            <ul id="catalog-suggestions" role="listbox" x-cloak x-show="open" x-transition.opacity.duration.100ms
+                class="absolute z-10 mt-2 max-h-80 w-full overflow-auto rounded-xl bg-white shadow-lg ring-1 ring-slate-200 dark:bg-gray-800 dark:ring-slate-700">
                 <template x-for="(suggestion, index) in suggestions" :key="suggestion.type + suggestion.id">
                     <li role="option" :id="'catalog-suggestion-' + index" :aria-selected="(highlighted === index).toString()"
                         @mousedown.prevent="select(suggestion)"
@@ -37,7 +38,7 @@
                 </template>
             </ul>
         </div>
-        <x-action-button variant="primary">Search</x-action-button>
+        <x-action-button variant="primary" size="lg">Search</x-action-button>
     </form>
 </x-card>
 
