@@ -6,8 +6,8 @@
                    :href="route('shows.show', $userShow->show)" />
     <div class="min-w-0 flex-1 flex flex-col gap-2">
         <div class="min-w-0">
-            <a href="{{ route('shows.show', $userShow->show) }}" class="block font-semibold text-gray-900 dark:text-gray-100 truncate hover:underline">{{ $userShow->show->title }}</a>
-            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            <a href="{{ route('shows.show', $userShow->show) }}" class="media-title">{{ $userShow->show->title }}</a>
+            <p class="mt-1 text-xs tabular-nums text-gray-600 dark:text-gray-400">
                 {{ $userShow->status->label() }}
                 @if ($userShow->show->status)
                     · {{ $userShow->show->status }}

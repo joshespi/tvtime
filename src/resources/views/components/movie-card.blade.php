@@ -14,8 +14,8 @@
     <div class="min-w-0 flex-1 flex flex-col gap-2">
         <div class="min-w-0">
             <a href="{{ $detailUrl }}"
-               class="block font-semibold text-gray-900 dark:text-gray-100 truncate hover:underline">{{ $userMovie->movie->title }}</a>
-            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-2 flex-wrap">
+               class="media-title">{{ $userMovie->movie->title }}</a>
+            <p class="mt-1 flex flex-wrap items-center gap-2 text-xs tabular-nums text-gray-600 dark:text-gray-400">
                 <span>
                     @if ($userMovie->movie->release_date)
                         {{ $userMovie->movie->release_date->format('Y') }}

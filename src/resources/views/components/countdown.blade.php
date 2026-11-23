@@ -7,7 +7,7 @@
 @endphp
 
 @if ($days !== null && $days >= 0)
-    <span {{ $attributes->merge(['class' => 'shrink-0 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400']) }}>
+    <span {{ $attributes->merge(['class' => 'shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold leading-none tabular-nums text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300']) }}>
         @if ($days === 0)
             Today
         @elseif ($days === 1)

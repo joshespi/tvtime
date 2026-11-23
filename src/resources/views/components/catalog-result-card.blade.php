@@ -5,32 +5,30 @@
 @endphp
 
 <x-card class="flex items-start gap-4">
-    <x-show-poster :url="$result['poster_url']" :alt="$result['title']" :href="$detailUrl" />
-    <div class="min-w-0 flex-1 flex flex-col gap-2">
+    <x-show-poster :url="$result['poster_url']" :alt="$result['title']" :href="$detailUrl" class="w-16 h-24 sm:w-[4.5rem] sm:h-[6.75rem]" />
+    <div class="min-w-0 flex-1 flex flex-col gap-3 self-stretch">
         <div class="min-w-0">
-            <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                <a href="{{ $detailUrl }}" class="hover:underline">{{ $result['title'] }}</a>
-                <x-media-type-badge :type="$result['type']" class="ms-1" />
-            </p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+            <a href="{{ $detailUrl }}" class="media-title">{{ $result['title'] }}</a>
+            <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums text-gray-600 dark:text-gray-400">
+                <x-media-type-badge :type="$result['type']" />
                 @if ($result['date'])
                     <span>{{ \Illuminate\Support\Carbon::parse($result['date'])->format('Y') }}</span>
                 @endif
                 @if ($result['vote_average'])
-                    <span>&middot; &#9733; {{ number_format($result['vote_average'], 1) }}</span>
+                    <span><span aria-hidden="true" class="text-amber-600 dark:text-amber-300">&#9733;</span> <span class="sr-only">Community rating</span> {{ number_format($result['vote_average'], 1) }}</span>
                 @endif
             </p>
             @if (! empty($result['genres']))
                 <p class="text-xs text-gray-500 dark:text-gray-400 capitalize">{{ implode(', ', $result['genres']) }}</p>
             @endif
             @if ($result['overview'])
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{{ $result['overview'] }}</p>
+                <p class="mt-2 line-clamp-2 text-sm leading-snug text-gray-600 dark:text-gray-400">{{ $result['overview'] }}</p>
             @endif
         </div>
-        @if ($tracked = $result['tracked'] ?? null)
-            {{-- Already in the user's lists: say so instead of offering to add it
-                 again, which previously read as if it had never been watched. --}}
-            <div class="flex items-center gap-3">
+        <div class="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+            @if ($tracked = $result['tracked'] ?? null)
+                {{-- Already in the user's lists: say so instead of offering to add it
+                     again, which previously read as if it had never been watched. --}}
                 <span class="text-xs text-emerald-700 dark:text-emerald-400">&#10003; {{ $tracked['label'] }}</span>
                 @if ($action = $tracked['action'] ?? null)
                     @if ($action['post'])
@@ -42,9 +40,7 @@
                         <x-text-link :href="$action['url']" size="text-xs">{{ $action['label'] }}</x-text-link>
                     @endif
                 @endif
-            </div>
-        @else
-            <div class="flex items-center gap-3">
+            @else
                 <x-track-button :type="$result['type']" :tmdb-id="$result['id']" />
                 @if ($dismissible)
                     {{-- Plain form, no Alpine — "not interested" just reloads the
@@ -53,12 +49,12 @@
                         @csrf
                         <input type="hidden" name="type" value="{{ $result['type'] }}">
                         <input type="hidden" name="tmdb_id" value="{{ $result['id'] }}">
-                        <button type="submit" class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:underline">
+                        <button type="submit" class="flex min-h-10 items-center rounded px-1 text-xs text-gray-600 hover:text-gray-900 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 dark:text-gray-400 dark:hover:text-gray-200 sm:min-h-8">
                             Not interested
                         </button>
                     </form>
                 @endif
-            </div>
-        @endif
+            @endif
+        </div>
     </div>
 </x-card>

@@ -12,18 +12,16 @@
                     <x-show-poster :url="$entry['poster_url']" :alt="$entry['title']" :href="$entry['link_url']" class="w-12 h-18" />
                     <div class="min-w-0 flex-1 flex flex-col gap-2">
                         <div class="min-w-0">
-                            <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                <a href="{{ $entry['link_url'] }}" class="hover:underline">{{ $entry['title'] }}</a>
-                                <x-media-type-badge :type="$entry['type']" class="ms-1" />
-                            </p>
+                            <a href="{{ $entry['link_url'] }}" class="media-title">{{ $entry['title'] }}</a>
                             @if ($entry['subtitle'])
                                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ $entry['subtitle'] }}</p>
                             @endif
-                            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                            <p class="mt-1 flex flex-wrap items-center gap-2 text-xs tabular-nums text-gray-600 dark:text-gray-400">
+                                <x-media-type-badge :type="$entry['type']" />
                                 Watched {{ $entry['watched_at']->format('M j, Y') }}
                             </p>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             @foreach ($entry['actions'] as $action)
                                 <form method="POST" action="{{ $action['url'] }}">
                                     @csrf
