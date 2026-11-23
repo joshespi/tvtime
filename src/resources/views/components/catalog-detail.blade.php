@@ -10,10 +10,10 @@
 
 <x-app-layout :title="$details['title']" width="max-w-3xl" spacing="space-y-6">
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">
+        <h1 class="page-title">
             {{ $details['title'] }}
             <x-media-type-badge :type="$type" class="ms-1" />
-        </h2>
+        </h1>
     </x-slot>
 
     <x-status-banner />

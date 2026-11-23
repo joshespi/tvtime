@@ -7,19 +7,15 @@
         <div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
             @include('layouts.navigation')
 
-            <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <div class="{{ $width }} mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <main class="app-canvas flex-1 min-w-0">
+                <div class="{{ $width }} mx-auto px-4 pt-7 sm:px-6 sm:pt-10 lg:px-8">
                     @isset($header)
                         {{ $header }}
                     @else
-                        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 leading-tight">{{ $heading ?? $title }}</h2>
+                        <h1 class="page-title">{{ $heading ?? $title }}</h1>
                     @endisset
-                </div>
-            </header>
 
-            <main class="flex-1 min-w-0">
-                <div class="py-10">
-                    <div class="{{ $width }} mx-auto px-4 sm:px-6 lg:px-8 {{ $spacing }}">
+                    <div class="pt-5 pb-8 sm:pt-6 sm:pb-10 {{ $spacing }}">
                         {{ $slot }}
                     </div>
                 </div>
