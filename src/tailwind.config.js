@@ -16,6 +16,25 @@ export default {
 
     theme: {
         extend: {
+            colors: {
+                success: '#087941',
+                // gray-50/900 mirror config('app.theme_colors') — change both together.
+                gray: {
+                    50: '#f8fbff',
+                    800: '#192339',
+                    900: '#10182b',
+                },
+                indigo: {
+                    50: '#eff5ff',
+                    100: '#deebff',
+                    300: '#a9c5ff',
+                    400: '#8ab1ff',
+                    500: '#2464e8',
+                    600: '#0949c5',
+                    700: '#0c3da4',
+                    800: '#103283',
+                },
+            },
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },

@@ -23,9 +23,8 @@
     </head>
     <body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <main class="min-h-screen flex flex-col items-center justify-center px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-center">
-            <a href="{{ url('/') }}" class="mb-8 flex items-center gap-2 text-lg font-semibold">
-                <img src="/icon-192.png" alt="" class="h-8 w-8 rounded-md">
-                {{ config('app.name', 'TV Tracker') }}
+            <a href="{{ url('/') }}" aria-label="{{ config('app.name') }} home" class="mb-8">
+                <x-application-logo class="w-48" />
             </a>
             <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">@yield('code')</p>
             <h1 class="mt-2 text-2xl font-semibold">@yield('heading')</h1>

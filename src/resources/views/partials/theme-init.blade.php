@@ -1,6 +1,10 @@
 {{-- The media pair is what a no-JS visit gets; syncThemeColor() below takes over otherwise. --}}
-<meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)">
+@php
+    $lightThemeColor = config('app.theme_colors.light');
+    $darkThemeColor = config('app.theme_colors.dark');
+@endphp
+<meta name="theme-color" content="{{ $lightThemeColor }}" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="{{ $darkThemeColor }}" media="(prefers-color-scheme: dark)">
 <script>
     (function () {
         // localStorage throws in some private-browsing / site-data-blocked
@@ -19,7 +23,7 @@
         // a manual toggle that disagrees with the OS setting. Called again by the toggle.
         window.syncThemeColor = function () {
             var dark = document.documentElement.classList.contains('dark');
-            var color = dark ? '#111827' : '#f9fafb';
+            var color = dark ? @js($darkThemeColor) : @js($lightThemeColor);
             document.querySelectorAll('[data-theme-toggle]').forEach(function (button) {
                 button.setAttribute('aria-pressed', dark ? 'true' : 'false');
             });

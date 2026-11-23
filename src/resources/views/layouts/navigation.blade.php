@@ -18,12 +18,12 @@
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}" aria-label="{{ config('app.name') }} dashboard">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
+                        <x-application-logo compact class="w-40 sm:w-9 lg:w-40" />
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden space-x-4 sm:-my-px sm:ms-5 sm:flex lg:ms-8 lg:space-x-8">
                     @foreach ($navLinks as $link)
                         <x-nav-link :href="route($link['route'])" :active="request()->routeIs($link['pattern'])">
                             {{ $link['label'] }}
@@ -39,7 +39,7 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button type="button" aria-haspopup="menu" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
+                            <div class="max-w-24 truncate lg:max-w-40">{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
