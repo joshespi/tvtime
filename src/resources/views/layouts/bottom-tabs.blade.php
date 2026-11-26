@@ -16,7 +16,7 @@
 
 {{-- env(safe-area-inset-bottom) keeps the labels clear of the iPhone home
      indicator in the installed app; it is 0 everywhere else. --}}
-<nav aria-label="Primary" class="sm:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 dark:bg-gray-800/95 backdrop-blur border-t border-gray-200 dark:border-gray-700 pb-[env(safe-area-inset-bottom)]">
+<nav aria-label="Primary" class="nav:hidden fixed inset-x-0 bottom-0 z-40 bg-white/95 dark:bg-gray-800/95 backdrop-blur border-t border-gray-200 dark:border-gray-700 pb-[env(safe-area-inset-bottom)]">
     <ul class="grid grid-cols-4">
         @foreach ($tabs as $tab)
             @php($active = request()->routeIs($tab['pattern']) || $tab['route'] === $catalogTab)

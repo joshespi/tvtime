@@ -4,6 +4,8 @@ import forms from '@tailwindcss/forms';
 // Shared with config/app.php (theme_colors), so the PWA chrome matches gray-50/900.
 import paper from './resources/paper.json';
 
+const { sm, md, ...largerScreens } = defaultTheme.screens;
+
 /** @type {import('tailwindcss').Config} */
 export default {
     darkMode: 'class',
@@ -18,6 +20,10 @@ export default {
     ],
 
     theme: {
+        // `nav:` is where the top nav links replace the bottom tabs. Defined in
+        // `screens` (not `extend`) so it sorts before `lg:`; appended screens
+        // would win over `lg:` overrides like `nav:w-9 lg:w-40`.
+        screens: { sm, md, nav: md, ...largerScreens },
         extend: {
             colors: {
                 success: '#087941',

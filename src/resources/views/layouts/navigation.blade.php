@@ -12,18 +12,18 @@
 
 <nav x-data="{ open: false }" class="pt-[env(safe-area-inset-top)] bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
     <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto px-4 nav:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}" aria-label="{{ config('app.name') }} dashboard">
-                        <x-application-logo compact class="w-40 sm:w-9 lg:w-40" />
+                        <x-application-logo compact class="w-40 nav:w-9 lg:w-40" />
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden sm:ms-3 sm:flex sm:items-center lg:ms-8 lg:gap-1">
+                <div class="hidden nav:ms-3 nav:flex nav:items-center lg:ms-8 lg:gap-1">
                     @foreach ($navLinks as $link)
                         <x-nav-link :href="route($link['route'])" :active="request()->routeIs($link['pattern'])">
                             {{ $link['label'] }}
@@ -33,7 +33,7 @@
             </div>
 
             <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6 sm:gap-2">
+            <div class="hidden nav:flex nav:items-center nav:ms-6 nav:gap-2">
                 <x-theme-toggle />
 
                 <x-dropdown align="right" width="48">
@@ -69,7 +69,7 @@
             </div>
 
             <!-- Hamburger -->
-            <div class="-me-2 flex items-center gap-1 sm:hidden">
+            <div class="-me-2 flex items-center gap-1 nav:hidden">
                 <x-theme-toggle />
 
                 <button @click="open = ! open" type="button" aria-label="Toggle navigation menu" aria-controls="mobile-nav" :aria-expanded="open.toString()" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 focus:text-gray-500 transition duration-150 ease-in-out">
@@ -83,7 +83,7 @@
     </div>
 
     <!-- Responsive Navigation Menu -->
-    <div id="mobile-nav" :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+    <div id="mobile-nav" :class="{'block': open, 'hidden': ! open}" class="hidden nav:hidden">
         <div class="pt-2 pb-3 space-y-1">
             @foreach ($navLinks as $link)
                 <x-responsive-nav-link :href="route($link['route'])" :active="request()->routeIs($link['pattern'])">
