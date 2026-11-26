@@ -10,6 +10,16 @@ class PublicPagesTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_the_landing_page_renders_for_guests(): void
+    {
+        $this->get('/')->assertOk()->assertSee('Open source &amp; ad-free', false);
+    }
+
+    public function test_the_landing_page_renders_for_signed_in_users(): void
+    {
+        $this->actingAs(User::factory()->create())->get('/')->assertOk();
+    }
+
     public function test_the_manifest_is_served_as_a_webmanifest_with_the_app_name_as_json(): void
     {
         config(['app.name' => 'Show "Tracker" & Co']);

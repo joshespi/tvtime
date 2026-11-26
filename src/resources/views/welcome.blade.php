@@ -2,7 +2,12 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         @include('partials.head')
-        @php($description = 'Track TV shows and movies, see what’s up next, and get notified about new episodes and releases.')
+        {{-- Block form on purpose: the inline form, followed later by a block
+             (the features list below), gets paired with that block's end tag
+             and everything in between compiles as PHP. See BladePhpDirectiveTest. --}}
+        @php
+            $description = 'Track TV shows and movies, see what’s up next, and get notified about new episodes and releases.';
+        @endphp
         <meta name="description" content="{{ $description }}">
         <meta property="og:type" content="website">
         <meta property="og:url" content="{{ url('/') }}">
