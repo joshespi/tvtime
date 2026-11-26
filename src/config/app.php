@@ -23,16 +23,18 @@ return [
     | brand_assets: show the TV Tracker wordmark images. Defaults on only
     | when the app keeps its stock name, so a renamed self-hosted copy falls
     | back to icon + text. theme_colors: browser chrome colors (theme-color
-    | meta, PWA manifest); keep in sync with gray-50/900 in tailwind.config.js.
+    | meta, PWA manifest), read from the same resources/paper.json that
+    | tailwind.config.js uses for gray-50/900, so the two can't drift.
     |
     */
 
     'brand_assets' => (bool) env('APP_BRAND_ASSETS', env('APP_NAME', 'TV Tracker') === 'TV Tracker'),
 
-    'theme_colors' => [
-        'light' => '#f8fbff',
-        'dark' => '#10182b',
-    ],
+    'theme_colors' => (function () {
+        $paper = json_decode(file_get_contents(resource_path('paper.json')), true);
+
+        return ['light' => $paper['50'], 'dark' => $paper['900']];
+    })(),
 
     /*
     |--------------------------------------------------------------------------

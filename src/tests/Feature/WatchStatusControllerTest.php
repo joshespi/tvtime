@@ -26,8 +26,7 @@ class WatchStatusControllerTest extends TestCase
     public function test_toggle_marks_an_unwatched_episode_watched(): void
     {
         $user = User::factory()->create();
-        $episode = Episode::factory()->create();
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $episode->show_id]);
+        $episode = $this->trackedEpisode($user);
 
         $response = $this->actingAs($user)->post("/episodes/{$episode->id}/toggle-watched");
 
@@ -39,8 +38,7 @@ class WatchStatusControllerTest extends TestCase
     public function test_toggle_marks_a_watched_episode_unwatched(): void
     {
         $user = User::factory()->create();
-        $episode = Episode::factory()->create();
-        UserShow::factory()->create(['user_id' => $user->id, 'show_id' => $episode->show_id]);
+        $episode = $this->trackedEpisode($user);
         WatchStatus::factory()->watched()->create(['user_id' => $user->id, 'episode_id' => $episode->id]);
 
         $this->actingAs($user)->post("/episodes/{$episode->id}/toggle-watched");
@@ -52,8 +50,7 @@ class WatchStatusControllerTest extends TestCase
     {
         $userA = User::factory()->create();
         $userB = User::factory()->create();
-        $episode = Episode::factory()->create();
-        UserShow::factory()->create(['user_id' => $userA->id, 'show_id' => $episode->show_id]);
+        $episode = $this->trackedEpisode($userA);
 
         $this->actingAs($userA)->post("/episodes/{$episode->id}/toggle-watched");
 

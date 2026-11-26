@@ -12,8 +12,8 @@ namespace App\Support;
 class MediaTypeStyle
 {
     private const PALETTES = [
-        'movie' => 'bg-purple-100 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400',
-        'show' => 'bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400',
+        'movie' => 'bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300',
+        'show' => 'bg-teal-100 dark:bg-teal-500/10 text-teal-800 dark:text-teal-300',
     ];
 
     private const LABELS = [
@@ -24,6 +24,21 @@ class MediaTypeStyle
     public static function classes(string $type): string
     {
         return self::PALETTES[$type] ?? self::PALETTES['show'];
+    }
+
+    /** The full pill — palette plus shape — shared by <x-media-type-badge> and the typeahead. */
+    public static function badgeClasses(string $type): string
+    {
+        return 'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium uppercase tracking-wide '.self::classes($type);
+    }
+
+    /** @return array<string, array{class: string, label: string}> every type's badge, keyed by type, for client-side lookup. */
+    public static function badges(): array
+    {
+        return collect(self::LABELS)->map(fn ($label, $type) => [
+            'class' => self::badgeClasses($type),
+            'label' => $label,
+        ])->all();
     }
 
     public static function label(string $type): string

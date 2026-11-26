@@ -48,4 +48,32 @@ trait FakesTmdb
             ]),
         ]);
     }
+
+    /** A bare show with no seasons — enough for the daily refresh to succeed. */
+    protected function fakeTmdbShowRefresh(string $tmdbId): void
+    {
+        Http::fake([
+            "api.themoviedb.org/3/tv/{$tmdbId}/season/*" => Http::response(['episodes' => []]),
+            "api.themoviedb.org/3/tv/{$tmdbId}*" => Http::response([
+                'id' => (int) $tmdbId,
+                'name' => 'A Show',
+                'overview' => 'o',
+                'number_of_seasons' => 0,
+                'first_air_date' => '2020-01-01',
+            ]),
+        ]);
+    }
+
+    /** A bare movie releasing today — enough for the daily refresh to succeed. */
+    protected function fakeTmdbMovieRefresh(string $tmdbId): void
+    {
+        Http::fake([
+            "api.themoviedb.org/3/movie/{$tmdbId}*" => Http::response([
+                'id' => (int) $tmdbId,
+                'title' => 'A Movie',
+                'overview' => 'o',
+                'release_date' => today()->toDateString(),
+            ]),
+        ]);
+    }
 }

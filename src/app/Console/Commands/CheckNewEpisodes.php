@@ -24,10 +24,11 @@ class CheckNewEpisodes extends Command
         // about. Resuming one picks its new episodes up on the next run.
         //
         // with('user') here rather than a second query below: these are exactly
-        // the rows the notification loop needs to address.
+        // the rows the notification loop needs to address. pushSubscriptions
+        // because the notifications' via() checks them.
         $tracked = Show::query()
             ->whereHas('userShows', fn ($query) => $query->active())
-            ->with(['userShows' => fn ($query) => $query->active()->with('user')])
+            ->with(['userShows' => fn ($query) => $query->active()->with('user.pushSubscriptions')])
             ->get()
             ->keyBy('id');
 

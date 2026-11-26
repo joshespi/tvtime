@@ -33,6 +33,11 @@ class Show extends Model
         ];
     }
 
+    public function detailUrl(): string
+    {
+        return route('shows.show', $this);
+    }
+
     public function episodes(): HasMany
     {
         return $this->hasMany(Episode::class);
@@ -68,15 +73,23 @@ class Show extends Model
     public function episodesWithWatchState(int $userId): Collection
     {
         $episodes = $this->episodes()
-            ->with(['watchStatuses' => fn ($query) => $query->where('user_id', $userId)])
             ->orderBy('season')
             ->orderBy('episode_number')
             ->get();
 
+        // Just the ids: a long-running show would otherwise hydrate one
+        // WatchStatus model per episode only to test watched_at.
+        $watched = WatchStatus::query()
+            ->where('user_id', $userId)
+            ->watched()
+            ->whereIn('episode_id', $this->episodes()->select('id'))
+            ->pluck('episode_id')
+            ->flip();
+
         $hasUnwatchedBefore = false;
 
         foreach ($episodes as $episode) {
-            $episode->watched = (bool) $episode->watchStatuses->first()?->watched_at;
+            $episode->watched = isset($watched[$episode->id]);
             $episode->hasUnwatchedBefore = $hasUnwatchedBefore;
 
             if (! $episode->watched) {

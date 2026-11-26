@@ -3,10 +3,10 @@
 {{-- Shared by all three shelves on /shows (Tracking, Finished, Not Tracking). --}}
 <x-card class="flex items-start gap-4">
     <x-show-poster :url="$userShow->show->posterUrl()" :alt="$userShow->show->title"
-                   :href="route('shows.show', $userShow->show)" />
+                   :href="$userShow->show->detailUrl()" />
     <div class="min-w-0 flex-1 flex flex-col gap-2">
         <div class="min-w-0">
-            <a href="{{ route('shows.show', $userShow->show) }}" class="media-title">{{ $userShow->show->title }}</a>
+            <a href="{{ $userShow->show->detailUrl() }}" class="media-title">{{ $userShow->show->title }}</a>
             <p class="mt-1 text-xs tabular-nums text-gray-600 dark:text-gray-400">
                 {{ $userShow->status->label() }}
                 @if ($userShow->show->status)
@@ -19,9 +19,7 @@
                     · Your rating: {{ $userShow->rating }}/{{ \App\Support\Rating::MAX }}
                 @endif
             </p>
-            @if (! empty($userShow->show->genres))
-                <p class="text-xs text-gray-500 dark:text-gray-400 capitalize">{{ implode(', ', $userShow->show->genres) }}</p>
-            @endif
+            <x-genre-list :genres="$userShow->show->genres" />
             @if ($userShow->show->nextUpcomingEpisode)
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
                     <span>Next: {{ $userShow->show->nextUpcomingEpisode->code() }}</span>
@@ -31,7 +29,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             <x-tracking-status-select :user-show="$userShow" />
-            <x-remove-button :action="route('shows.destroy', $userShow)" confirm="Remove this show and its watch history? To just stop following it, set its status to Paused or Dropped instead." />
+            <x-remove-show-button :user-show="$userShow" />
         </div>
     </div>
 </x-card>

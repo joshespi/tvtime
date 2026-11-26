@@ -1,15 +1,14 @@
 <x-catalog-detail type="movie" :details="$details">
     @if (! $userMovie)
         <x-track-button type="movie" :tmdb-id="$tmdbId" variant="primary" />
-    @elseif (! $userMovie->isFinished())
-        <div class="flex flex-wrap items-center gap-3">
-            <span class="text-xs text-emerald-700 dark:text-emerald-400">&#10003; {{ $userMovie->stateLabel() }}</span>
-            <x-mark-watched-button :user-movie="$userMovie" variant="primary" />
-        </div>
     @else
         <div class="flex flex-wrap items-center gap-3">
-            <span class="text-xs text-emerald-700 dark:text-emerald-400">&#10003; {{ $userMovie->stateLabel() }}</span>
-            <x-finished-movie-actions :user-movie="$userMovie" />
+            <x-tracked-label>{{ $userMovie->stateLabel() }}</x-tracked-label>
+            @if ($userMovie->isFinished())
+                <x-finished-movie-actions :user-movie="$userMovie" />
+            @else
+                <x-mark-watched-button :user-movie="$userMovie" variant="primary" />
+            @endif
         </div>
     @endif
 

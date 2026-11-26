@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RemovesTracked;
 use App\Http\Controllers\Concerns\SavesRatings;
 use App\Models\Episode;
 use App\Models\Show;
@@ -18,7 +19,7 @@ use Illuminate\View\View;
 
 class ShowController extends Controller
 {
-    use SavesRatings;
+    use RemovesTracked, SavesRatings;
 
     public function __construct(private readonly CatalogSearchService $catalog) {}
 
@@ -71,14 +72,19 @@ class ShowController extends Controller
 
         $episodes = $show->episodesWithWatchState($request->user()->id);
 
-        $seasons = $episodes->groupBy('season');
+        $seasons = $episodes->groupBy('season')->map(fn ($episodes) => [
+            'episodes' => $episodes,
+            'total' => $episodes->count(),
+            'watched' => $episodes->where('watched', true)->count(),
+            'hasAiredUnwatched' => $episodes->contains(
+                fn (Episode $episode) => ! $episode->watched && $episode->hasAired()
+            ),
+        ]);
 
         // Seasons start folded except the one the user is actually in: the
         // first with an aired episode still unwatched, or the latest season
         // when they're all caught up.
-        $openSeason = $seasons->search(fn ($episodes) => $episodes->contains(
-            fn (Episode $episode) => ! $episode->watched && $episode->hasAired()
-        ));
+        $openSeason = $seasons->search(fn ($season) => $season['hasAiredUnwatched']);
         $openSeason = $openSeason === false ? $seasons->keys()->last() : $openSeason;
 
         return view('shows.show', [
@@ -117,11 +123,6 @@ class ShowController extends Controller
 
     public function destroy(UserShow $userShow): RedirectResponse
     {
-        Gate::authorize('delete', $userShow);
-
-        $title = $userShow->show->title;
-        $userShow->delete();
-
-        return redirect()->route('shows.index')->with('status', "\"{$title}\" removed from your list.");
+        return $this->removeTracked($userShow, $userShow->show->title, 'shows.index');
     }
 }

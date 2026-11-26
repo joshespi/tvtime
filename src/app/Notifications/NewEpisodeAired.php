@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use App\Models\Episode;
 use App\Notifications\Concerns\TracksNotificationSubject;
-use App\Support\TmdbImage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -33,7 +32,11 @@ class NewEpisodeAired extends Notification implements ShouldQueue, TracksNotific
      */
     public function via(object $notifiable): array
     {
-        return ['mail', WebPushChannel::class];
+        // Push only for users with a subscription: otherwise the queued push
+        // job just re-hydrates everything to send nothing.
+        return $notifiable->pushSubscriptions->isNotEmpty()
+            ? ['mail', WebPushChannel::class]
+            : ['mail'];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -41,7 +44,7 @@ class NewEpisodeAired extends Notification implements ShouldQueue, TracksNotific
         $show = $this->episode->show;
 
         return (new MailMessage)
-            ->subject("New episode: {$show->title}")
+            ->subject($this->headline())
             ->line("{$this->episode->label()} of \"{$show->title}\" just aired.")
             ->action('Open Up Next', route('dashboard'));
     }
@@ -51,10 +54,15 @@ class NewEpisodeAired extends Notification implements ShouldQueue, TracksNotific
         $show = $this->episode->show;
 
         return (new WebPushMessage)
-            ->title("New episode: {$show->title}")
+            ->title($this->headline())
             ->body("{$this->episode->label()} just aired.")
-            ->icon($show->posterUrl(TmdbImage::SIZE_ICON) ?? TmdbImage::FALLBACK_ICON)
+            ->icon($show->iconUrl())
             ->data(['url' => route('dashboard')])
             ->tag("episode-{$this->episode->id}");
+    }
+
+    private function headline(): string
+    {
+        return "New episode: {$this->episode->show->title}";
     }
 }

@@ -1,8 +1,8 @@
 <section>
     <header>
-        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+        <x-section-heading>
             {{ __('Recommendations') }}
-        </h2>
+        </x-section-heading>
 
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
             {{ __('Show a "Recommended for you" section on the dashboard, based on what you track.') }}
@@ -14,10 +14,8 @@
         @method('PATCH')
 
         <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-            <input type="checkbox" name="recommendations_enabled" value="1"
-                   @checked($user->recommendations_enabled)
-                   onchange="this.form.submit()"
-                   class="rounded border-gray-300 dark:border-gray-600 dark:bg-gray-900 text-indigo-600 shadow-sm focus:ring-indigo-500">
+            <x-checkbox name="recommendations_enabled" value="1" :checked="$user->recommendations_enabled"
+                        onchange="this.form.submit()" />
             Show recommendations on my dashboard
         </label>
 

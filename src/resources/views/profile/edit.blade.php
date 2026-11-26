@@ -8,7 +8,7 @@
     <x-card padding="p-4 sm:p-8">
         <div class="max-w-xl flex items-center justify-between gap-4">
             <div>
-                <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">Your Stats</h2>
+                <x-section-heading>Your Stats</x-section-heading>
                 <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">See what you've watched, your streaks, and top genres.</p>
             </div>
             <x-action-button variant="primary" :href="route('profile.stats')" class="shrink-0">View stats</x-action-button>

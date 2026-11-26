@@ -23,7 +23,7 @@
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-4 sm:-my-px sm:ms-5 sm:flex lg:ms-8 lg:space-x-8">
+                <div class="hidden sm:ms-3 sm:flex sm:items-center lg:ms-8 lg:gap-1">
                     @foreach ($navLinks as $link)
                         <x-nav-link :href="route($link['route'])" :active="request()->routeIs($link['pattern'])">
                             {{ $link['label'] }}

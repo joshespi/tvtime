@@ -10,4 +10,10 @@ trait HasTmdbPoster
     {
         return TmdbImage::url($this->poster_path, $size);
     }
+
+    /** Small poster for notifications, never null. */
+    public function iconUrl(): string
+    {
+        return $this->posterUrl(TmdbImage::SIZE_ICON) ?? TmdbImage::FALLBACK_ICON;
+    }
 }

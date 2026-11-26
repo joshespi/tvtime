@@ -62,8 +62,8 @@ class StatsControllerTest extends TestCase
         $response = $this->actingAs($user)->get('/profile/stats');
 
         $counts = $response->viewData('showStatusCounts');
-        $this->assertEquals(2, $counts['watching']);
-        $this->assertEquals(1, $counts['dropped']);
+        $this->assertEquals(2, $counts['Watching']);
+        $this->assertEquals(1, $counts['Dropped']);
     }
 
     public function test_tallies_top_genres_from_tracked_shows_and_watched_movies(): void

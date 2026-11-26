@@ -39,8 +39,8 @@ class CalendarControllerTest extends TestCase
             ->flatten(1)
             ->first(fn (array $day) => $day['date']->isSameDay($targetDate));
 
-        $this->assertSame(1, $day['episodes']->count());
-        $this->assertSame(1, $day['movies']->count());
+        $this->assertSame(1, $day['entries']->where('type', 'show')->count());
+        $this->assertSame(1, $day['entries']->where('type', 'movie')->count());
     }
 
     public function test_omits_episodes_of_shows_the_user_has_stopped_watching(): void
@@ -58,7 +58,7 @@ class CalendarControllerTest extends TestCase
             ->flatten(1)
             ->first(fn (array $day) => $day['date']->isSameDay($targetDate));
 
-        $this->assertSame(0, $day['episodes']->count());
+        $this->assertSame(0, $day['entries']->where('type', 'show')->count());
     }
 
     public function test_ignores_items_the_user_does_not_track(): void
@@ -70,7 +70,7 @@ class CalendarControllerTest extends TestCase
         $response = $this->actingAs($user)->get('/calendar');
 
         $response->assertOk();
-        $episodeCount = collect($response->viewData('weeks'))->flatten(1)->sum(fn ($day) => $day['episodes']->count());
+        $episodeCount = collect($response->viewData('weeks'))->flatten(1)->sum(fn ($day) => $day['entries']->where('type', 'show')->count());
         $this->assertSame(0, $episodeCount);
     }
 
@@ -97,7 +97,7 @@ class CalendarControllerTest extends TestCase
 
         $this->assertNotNull($day);
         $this->assertFalse($day['inMonth']);
-        $this->assertSame(1, $day['episodes']->count());
+        $this->assertSame(1, $day['entries']->where('type', 'show')->count());
     }
 
     public function test_accepts_a_month_parameter(): void

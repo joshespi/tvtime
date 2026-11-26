@@ -1,4 +1,15 @@
 <x-app-layout title="Dashboard" spacing="space-y-7 sm:space-y-9">
+    <x-slot name="header">
+        <div class="cinema-banner px-6 py-8 sm:px-10 sm:py-12">
+            <img src="{{ asset('brand/cinema.webp') }}" alt="">
+            <h1 class="font-display font-normal text-4xl tracking-tight sm:text-6xl">Dashboard</h1>
+            <div class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium">
+                <a href="{{ route('shows.index') }}" class="underline decoration-white/50 underline-offset-4 hover:decoration-white">{{ trans_choice('{1} :count show with an episode ready|[0,*] :count shows with an episode ready', $upNext->count()) }}</a>
+                <a href="{{ route('movies.index') }}" class="underline decoration-white/50 underline-offset-4 hover:decoration-white">{{ trans_choice('{1} :count movie to watch|[0,*] :count movies to watch', $movieWatchlist->count()) }}</a>
+            </div>
+        </div>
+    </x-slot>
+
     <x-status-banner />
 
     <x-catalog-search :query="$query" :results="$results"
@@ -14,14 +25,10 @@
                             <span class="basis-full">{{ $entry['episode']->label() }}</span>
                             <span class="text-xs">Aired {{ $entry['episode']->air_date?->format('M j, Y') }}</span>
                             @if ($entry['backlog'] > 0)
-                                <x-text-link :href="route('shows.show', $entry['show'])" size="text-xs">+{{ $entry['backlog'] }} more</x-text-link>
+                                <x-text-link :href="$entry['show']->detailUrl()" size="text-xs">+{{ $entry['backlog'] }} more</x-text-link>
                             @endif
                         </x-slot:meta>
-                        <form method="POST" action="{{ route('episodes.toggle-watched', $entry['episode']) }}">
-                            @csrf
-                            <input type="hidden" name="watched" value="1">
-                            <x-action-button>Mark watched</x-action-button>
-                        </form>
+                        <x-episode-watched-button :episode="$entry['episode']" variant="secondary" />
                     </x-show-episode-card>
                 @endforeach
             </x-card-grid>

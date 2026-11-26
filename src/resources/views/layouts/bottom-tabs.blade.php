@@ -23,9 +23,11 @@
             <li>
                 <a href="{{ route($tab['route']) }}" @if ($active) aria-current="page" @endif
                    class="flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium {{ $active ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400' }}">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path d="{{ $tab['icon'] }}" />
-                    </svg>
+                    <span class="rounded-full px-4 py-0.5 {{ $active ? 'bg-indigo-50 dark:bg-indigo-900' : '' }}">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="{{ $tab['icon'] }}" />
+                        </svg>
+                    </span>
                     {{ $tab['label'] }}
                 </a>
             </li>

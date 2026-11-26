@@ -18,9 +18,7 @@
                     <span><span aria-hidden="true" class="text-amber-600 dark:text-amber-300">&#9733;</span> <span class="sr-only">Community rating</span> {{ number_format($result['vote_average'], 1) }}</span>
                 @endif
             </p>
-            @if (! empty($result['genres']))
-                <p class="text-xs text-gray-500 dark:text-gray-400 capitalize">{{ implode(', ', $result['genres']) }}</p>
-            @endif
+            <x-genre-list :genres="$result['genres']" />
             @if ($result['overview'])
                 <p class="mt-2 line-clamp-2 text-sm leading-snug text-gray-600 dark:text-gray-400">{{ $result['overview'] }}</p>
             @endif
@@ -29,7 +27,7 @@
             @if ($tracked = $result['tracked'] ?? null)
                 {{-- Already in the user's lists: say so instead of offering to add it
                      again, which previously read as if it had never been watched. --}}
-                <span class="text-xs text-emerald-700 dark:text-emerald-400">&#10003; {{ $tracked['label'] }}</span>
+                <x-tracked-label>{{ $tracked['label'] }}</x-tracked-label>
                 @if ($action = $tracked['action'] ?? null)
                     @if ($action['post'])
                         <form method="POST" action="{{ $action['url'] }}">

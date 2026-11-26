@@ -10,23 +10,12 @@ use App\Notifications\MovieReleased;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Tests\Concerns\FakesTmdb;
 use Tests\TestCase;
 
 class CheckMovieReleasesTest extends TestCase
 {
-    use RefreshDatabase;
-
-    private function fakeTmdbRefresh(string $tmdbId): void
-    {
-        Http::fake([
-            "api.themoviedb.org/3/movie/{$tmdbId}*" => Http::response([
-                'id' => (int) $tmdbId,
-                'title' => 'A Movie',
-                'overview' => 'o',
-                'release_date' => today()->toDateString(),
-            ]),
-        ]);
-    }
+    use FakesTmdb, RefreshDatabase;
 
     public function test_notifies_watchlisted_users_about_movies_releasing_today(): void
     {
@@ -36,7 +25,7 @@ class CheckMovieReleasesTest extends TestCase
         $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()]);
         $this->trackMovie($user, $movie);
 
-        $this->fakeTmdbRefresh('603');
+        $this->fakeTmdbMovieRefresh('603');
 
         $this->artisan('app:check-movie-releases')->assertSuccessful();
 
@@ -77,7 +66,7 @@ class CheckMovieReleasesTest extends TestCase
         $movie = Movie::factory()->create(['tmdb_id' => '603', 'release_date' => today()]);
         UserMovie::factory()->watched()->create(['user_id' => $user->id, 'movie_id' => $movie->id]);
 
-        $this->fakeTmdbRefresh('603');
+        $this->fakeTmdbMovieRefresh('603');
 
         $this->artisan('app:check-movie-releases')->assertSuccessful();
 
@@ -99,7 +88,7 @@ class CheckMovieReleasesTest extends TestCase
             'channel' => 'mail',
         ]);
 
-        $this->fakeTmdbRefresh('603');
+        $this->fakeTmdbMovieRefresh('603');
 
         $this->artisan('app:check-movie-releases')->assertSuccessful();
 

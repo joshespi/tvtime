@@ -21,6 +21,15 @@ class PublicPagesTest extends TestCase
         $this->assertSame('Show "Tracker" & Co', $response->json('name'));
     }
 
+    public function test_the_manifest_is_cacheable_and_starts_no_session(): void
+    {
+        $response = $this->get('/manifest.webmanifest');
+
+        $this->assertStringContainsString('max-age=86400', $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('public', $response->headers->get('Cache-Control'));
+        $response->assertCookieMissing(config('session.cookie'));
+    }
+
     public function test_the_donate_page_hides_the_bitcoin_section_without_an_address(): void
     {
         config(['donate.btc_address' => '']);

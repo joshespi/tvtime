@@ -26,8 +26,8 @@
             <a href="{{ url('/') }}" aria-label="{{ config('app.name') }} home" class="mb-8">
                 <x-application-logo class="w-48" />
             </a>
-            <p class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">@yield('code')</p>
-            <h1 class="mt-2 text-2xl font-semibold">@yield('heading')</h1>
+            <p class="font-mono text-lg tracking-widest text-indigo-600 dark:text-indigo-400">@yield('code')</p>
+            <h1 class="page-title mt-2">@yield('heading')</h1>
             <p class="mt-3 max-w-md text-gray-500 dark:text-gray-400">@yield('message')</p>
             <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
                 @yield('actions')

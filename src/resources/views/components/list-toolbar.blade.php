@@ -1,7 +1,7 @@
 @props(['genreOptions', 'genre', 'sort'])
 
 {{-- Watch-history link plus the genre/sort filters shared by /shows and /movies. --}}
-<div class="flex items-center justify-between gap-2 px-1 flex-wrap">
+<div class="flex items-center justify-between gap-3 border-y border-gray-200 py-3 dark:border-gray-700 flex-wrap">
     <x-text-link :href="route('history.index')">Watch history &rarr;</x-text-link>
     <div class="flex flex-wrap items-center gap-3">
         <x-query-select name="genre" label="Genre" :options="$genreOptions" :selected="$genre" />

@@ -10,7 +10,7 @@
         <x-tracking-status-select :user-show="$userShow" />
         <x-trailer-link :trailer-key="$show->trailer_key" />
         <x-imdb-link :imdb-id="$show->imdb_id" />
-        <x-remove-button :action="route('shows.destroy', $userShow)" confirm="Remove this show and its watch history? To just stop following it, set its status to Paused or Dropped instead." />
+        <x-remove-show-button :user-show="$userShow" />
         @unless ($userShow->status->isActive())
             <span class="basis-full text-xs text-gray-500 dark:text-gray-400">No dashboard entries, calendar dates or notifications.</span>
         @endunless
@@ -22,12 +22,7 @@
 
     <x-cast-list :cast="$show->cast" />
 
-    @forelse ($seasons as $season => $episodes)
-        @php
-            $total = $episodes->count();
-            $watchedCount = $episodes->sum(fn ($episode) => (int) $episode->watched);
-            $hasAiredUnwatched = $episodes->contains(fn ($episode) => ! $episode->watched && $episode->hasAired());
-        @endphp
+    @forelse ($seasons as $season => ['episodes' => $episodes, 'total' => $total, 'watched' => $watchedCount, 'hasAiredUnwatched' => $hasAiredUnwatched])
         {{-- Native <details>, like <x-collapsible-section>: folds without JS.
              Which season starts open is picked in the controller. --}}
         <x-card padding="" class="relative">
@@ -60,18 +55,8 @@
                             @if ($upcoming && ! $episode->watched)
                                 <x-countdown :date="$episode->air_date" />
                             @else
-                                <form method="POST" action="{{ route('episodes.toggle-watched', $episode) }}"
-                                    @if (! $episode->watched && $episode->hasUnwatchedBefore)
-                                        data-mark-through-url="{{ route('episodes.mark-through', $episode) }}"
-                                        onsubmit="return tvTracker.confirmMarkWatched(this)"
-                                    @endif
-                                >
-                                    @csrf
-                                    <input type="hidden" name="watched" value="{{ $episode->watched ? 0 : 1 }}">
-                                    <x-action-button :variant="$episode->watched ? 'secondary' : 'primary'">
-                                        {{ $episode->watched ? 'Mark unwatched' : 'Mark watched' }}
-                                    </x-action-button>
-                                </form>
+                                <x-episode-watched-button :episode="$episode" :watched="$episode->watched"
+                                    :mark-through="! $episode->watched && $episode->hasUnwatchedBefore" />
                             @endif
                         </div>
                     </li>

@@ -8,7 +8,6 @@ use App\Models\UserShow;
 use App\Services\Catalog\CatalogSearchService;
 use App\Services\Catalog\RecommendationService;
 use Closure;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -38,7 +37,7 @@ class UpNextController extends Controller
         // Both episode selections are eager-loaded in one pass: `episodes` is
         // narrowed to the single next unwatched-aired one, and the next upcoming
         // one comes from its own relation so the two can't overwrite each other.
-        $watchingShows = $this->activeShows($request)
+        $watchingShows = $request->user()->shows()->active()
             ->with([
                 'show.episodes' => fn ($query) => $query
                     ->unwatchedAiredFor($userId)
@@ -81,22 +80,13 @@ class UpNextController extends Controller
      */
     public function airingSoon(Request $request): View
     {
-        $watchingShows = $this->activeShows($request)
+        $watchingShows = $request->user()->shows()->active()
             ->with('show.nextUpcomingEpisode')
             ->get();
 
         return view('airing-soon', [
             'airingSoon' => $this->airingSoonFor($watchingShows),
         ]);
-    }
-
-    /**
-     * The current user's actively-watched shows, unloaded — callers attach
-     * whichever `show` relations their view needs before executing the query.
-     */
-    private function activeShows(Request $request): HasMany
-    {
-        return $request->user()->shows()->active();
     }
 
     /**

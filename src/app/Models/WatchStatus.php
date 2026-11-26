@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\WatchStatusFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,6 +42,12 @@ class WatchStatus extends Model
         if ($rows !== []) {
             static::upsert($rows, ['user_id', 'episode_id'], ['watched_at']);
         }
+    }
+
+    /** Rows that currently count as watched — unwatching nulls watched_at rather than deleting. */
+    public function scopeWatched(Builder $query): Builder
+    {
+        return $query->whereNotNull('watched_at');
     }
 
     public function episode(): BelongsTo

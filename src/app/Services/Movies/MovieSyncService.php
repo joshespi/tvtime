@@ -6,6 +6,7 @@ use App\Models\Movie;
 use App\Services\Concerns\MapsTmdbMetadata;
 use App\Services\Concerns\RefreshesCastAndTrailer;
 use App\Services\Shows\TmdbClient;
+use App\Services\TitleNotFoundException;
 use Illuminate\Support\Facades\Log;
 
 class MovieSyncService
@@ -20,7 +21,7 @@ class MovieSyncService
         $movie = $this->tmdb->movie($externalId, strict: true);
 
         if (! $movie) {
-            throw MovieNotFoundException::forQuery($externalId);
+            throw TitleNotFoundException::for('movie', $externalId);
         }
 
         return Movie::updateOrCreate(['tmdb_id' => $externalId], [

@@ -52,16 +52,32 @@ class CalendarController extends Controller
             ->get()
             ->groupBy(fn (Movie $movie) => $movie->release_date->toDateString());
 
+        // One chip list per day, episodes first, so the agenda and the grid
+        // render the same entries through <x-calendar-chip>.
         $days = collect(CarbonPeriod::create($gridStart, $gridEnd))->map(fn (CarbonInterface $day) => [
             'date' => $day,
             'inMonth' => $day->month === $anchor->month,
             'isToday' => $day->isToday(),
-            'episodes' => $episodesByDate->get($day->toDateString(), collect()),
-            'movies' => $moviesByDate->get($day->toDateString(), collect()),
+            'entries' => $episodesByDate->get($day->toDateString(), collect())
+                ->map(fn (Episode $episode) => [
+                    'type' => 'show',
+                    'title' => $episode->show->title,
+                    'code' => $episode->code(),
+                    'url' => $episode->show->detailUrl(),
+                ])
+                ->concat($moviesByDate->get($day->toDateString(), collect())->map(fn (Movie $movie) => [
+                    'type' => 'movie',
+                    'title' => $movie->title,
+                    'code' => null,
+                    'url' => $movie->detailUrl(),
+                ]))
+                ->values(),
         ]);
 
         return view('calendar.index', [
             'weeks' => $days->chunk(7)->map->values(),
+            // Phones get a list of just the in-month days that have something on.
+            'agendaDays' => $days->filter(fn ($day) => $day['inMonth'] && $day['entries']->isNotEmpty()),
             'month' => $anchor,
             'prevMonth' => $anchor->copy()->subMonthNoOverflow()->format('Y-m'),
             'nextMonth' => $anchor->copy()->addMonthNoOverflow()->format('Y-m'),

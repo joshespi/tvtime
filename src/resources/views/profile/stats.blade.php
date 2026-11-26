@@ -15,7 +15,7 @@
                 <ul class="mt-2 space-y-1">
                     @foreach ($showStatusCounts as $status => $count)
                         <li class="flex items-center justify-between text-sm">
-                            <span class="text-gray-600 dark:text-gray-300">{{ \App\Support\TrackingStatus::from($status)->label() }}</span>
+                            <span class="text-gray-600 dark:text-gray-300">{{ $status }}</span>
                             <span class="text-gray-900 dark:text-gray-100 font-medium">{{ $count }}</span>
                         </li>
                     @endforeach

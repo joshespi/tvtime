@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\RemovesTracked;
 use App\Http\Controllers\Concerns\SavesRatings;
 use App\Http\Controllers\Concerns\TogglesWatched;
 use App\Models\MovieWatch;
@@ -17,7 +18,7 @@ use Illuminate\View\View;
 
 class MovieController extends Controller
 {
-    use SavesRatings, TogglesWatched;
+    use RemovesTracked, SavesRatings, TogglesWatched;
 
     public function __construct(private readonly CatalogSearchService $catalog) {}
 
@@ -104,11 +105,6 @@ class MovieController extends Controller
 
     public function destroy(UserMovie $userMovie): RedirectResponse
     {
-        Gate::authorize('delete', $userMovie);
-
-        $title = $userMovie->movie->title;
-        $userMovie->delete();
-
-        return redirect()->route('movies.index')->with('status', "\"{$title}\" removed from your list.");
+        return $this->removeTracked($userMovie, $userMovie->movie->title, 'movies.index');
     }
 }

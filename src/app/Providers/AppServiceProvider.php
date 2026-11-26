@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\UserMovie;
+use App\Models\UserShow;
+use App\Policies\OwnedByUserPolicy;
 use App\Services\Shows\TmdbClient;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,5 +23,11 @@ class AppServiceProvider extends ServiceProvider
         // singleton because this app runs on php-fpm, not Octane — nothing
         // persists across requests.
         $this->app->singleton(TmdbClient::class);
+    }
+
+    public function boot(): void
+    {
+        Gate::policy(UserShow::class, OwnedByUserPolicy::class);
+        Gate::policy(UserMovie::class, OwnedByUserPolicy::class);
     }
 }

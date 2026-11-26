@@ -80,7 +80,7 @@ class HistoryController extends Controller
             ->orderByDesc('movie_watches.watched_at');
 
         $episodeQuery = $request->user()->watchStatuses()
-            ->whereNotNull('watched_at')
+            ->watched()
             ->with('episode.show')
             ->orderByDesc('watched_at');
 
@@ -110,7 +110,7 @@ class HistoryController extends Controller
             'title' => $watchStatus->episode->show->title,
             'subtitle' => $watchStatus->episode->label(),
             'poster_url' => $watchStatus->episode->show->posterUrl(),
-            'link_url' => route('shows.show', $watchStatus->episode->show),
+            'link_url' => $watchStatus->episode->show->detailUrl(),
             'actions' => [
                 ['label' => 'Mark unwatched', 'url' => route('episodes.toggle-watched', $watchStatus->episode), 'fields' => ['watched' => 0]],
             ],

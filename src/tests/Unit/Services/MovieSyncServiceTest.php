@@ -3,8 +3,8 @@
 namespace Tests\Unit\Services;
 
 use App\Models\Movie;
-use App\Services\Movies\MovieNotFoundException;
 use App\Services\Movies\MovieSyncService;
+use App\Services\TitleNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\FakesTmdb;
@@ -50,7 +50,7 @@ class MovieSyncServiceTest extends TestCase
     {
         Http::fake(['api.themoviedb.org/3/movie/*' => Http::response(null, 404)]);
 
-        $this->expectException(MovieNotFoundException::class);
+        $this->expectException(TitleNotFoundException::class);
 
         $this->service->store('missing');
     }

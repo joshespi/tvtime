@@ -17,7 +17,7 @@
                         width="200" height="200"></canvas>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">BTC address</p>
+                <p class="eyebrow mb-2 text-gray-500 dark:text-gray-400">BTC address</p>
                 <div x-data="{ copied: false, address: @js($btcAddress) }" class="flex items-start gap-2">
                     <code class="text-xs font-mono break-all text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 rounded px-3 py-2 block flex-1">
                         {{ $btcAddress }}

@@ -10,7 +10,7 @@
 
 <x-app-layout :title="$details['title']" width="max-w-3xl" spacing="space-y-6">
     <x-slot name="header">
-        <h1 class="page-title">
+        <h1 class="masthead page-title">
             {{ $details['title'] }}
             <x-media-type-badge :type="$type" class="ms-1" />
         </h1>

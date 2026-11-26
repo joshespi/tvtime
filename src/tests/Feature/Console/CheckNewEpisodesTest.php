@@ -10,25 +10,12 @@ use App\Notifications\NewEpisodeAired;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Tests\Concerns\FakesTmdb;
 use Tests\TestCase;
 
 class CheckNewEpisodesTest extends TestCase
 {
-    use RefreshDatabase;
-
-    private function fakeTmdbRefresh(string $tmdbId): void
-    {
-        Http::fake([
-            "api.themoviedb.org/3/tv/{$tmdbId}/season/*" => Http::response(['episodes' => []]),
-            "api.themoviedb.org/3/tv/{$tmdbId}*" => Http::response([
-                'id' => (int) $tmdbId,
-                'name' => 'A Show',
-                'overview' => 'o',
-                'number_of_seasons' => 0,
-                'first_air_date' => '2020-01-01',
-            ]),
-        ]);
-    }
+    use FakesTmdb, RefreshDatabase;
 
     public function test_notifies_watching_users_about_episodes_airing_today(): void
     {
@@ -39,7 +26,7 @@ class CheckNewEpisodesTest extends TestCase
         $this->trackShow($user, $show, ['status' => 'watching']);
         $episode = Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()]);
 
-        $this->fakeTmdbRefresh('1396');
+        $this->fakeTmdbShowRefresh('1396');
 
         $this->artisan('app:check-new-episodes')->assertSuccessful();
 
@@ -59,7 +46,7 @@ class CheckNewEpisodesTest extends TestCase
         $this->trackShow($user, $show, ['status' => 'watching']);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()->subDay()]);
 
-        $this->fakeTmdbRefresh('1396');
+        $this->fakeTmdbShowRefresh('1396');
 
         $this->artisan('app:check-new-episodes')->assertSuccessful();
 
@@ -75,7 +62,7 @@ class CheckNewEpisodesTest extends TestCase
         $this->trackShow($user, $show, ['status' => 'paused']);
         Episode::factory()->create(['show_id' => $show->id, 'air_date' => today()]);
 
-        $this->fakeTmdbRefresh('1396');
+        $this->fakeTmdbShowRefresh('1396');
 
         $this->artisan('app:check-new-episodes')->assertSuccessful();
 
@@ -98,7 +85,7 @@ class CheckNewEpisodesTest extends TestCase
             'channel' => 'mail',
         ]);
 
-        $this->fakeTmdbRefresh('1396');
+        $this->fakeTmdbShowRefresh('1396');
 
         $this->artisan('app:check-new-episodes')->assertSuccessful();
 

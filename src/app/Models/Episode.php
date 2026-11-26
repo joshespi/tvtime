@@ -62,7 +62,7 @@ class Episode extends Model
     public function scopeUnwatchedBy(Builder $query, int $userId): Builder
     {
         return $query->whereDoesntHave('watchStatuses', function (Builder $query) use ($userId) {
-            $query->where('user_id', $userId)->whereNotNull('watched_at');
+            $query->where('user_id', $userId)->watched();
         });
     }
 

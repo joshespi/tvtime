@@ -1,8 +1,8 @@
 <section>
     <header>
-        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+        <x-section-heading>
             {{ __('Push Notifications') }}
-        </h2>
+        </x-section-heading>
 
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
             {{ __("Get a browser notification when a show you're tracking has a new episode air.") }}

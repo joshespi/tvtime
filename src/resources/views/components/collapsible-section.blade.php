@@ -10,7 +10,7 @@
 
 {{-- Native <details> rather than Alpine: it folds before any JS has run, and
      browsers give us the keyboard and screen-reader behaviour for free. --}}
-<details @if ($open) open @endif {{ $attributes->merge(['class' => 'group border-t border-slate-200 pt-3 dark:border-slate-700/80']) }}>
+<details @if ($open) open @endif {{ $attributes->merge(['class' => 'group border-t border-gray-200 pt-3 dark:border-gray-700/80']) }}>
     <summary class="section-label flex min-h-9 cursor-pointer list-none items-center gap-2 rounded hover:text-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 dark:hover:text-indigo-300 [&::-webkit-details-marker]:hidden">
         <svg class="h-4 w-4 shrink-0 text-indigo-600 motion-safe:transition-transform group-open:rotate-90 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />

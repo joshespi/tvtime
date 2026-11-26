@@ -13,7 +13,7 @@
 @endphp
 
 <x-card class="flex items-start gap-4">
-    <x-show-poster :url="$posterUrl" :alt="$title" class="w-24 h-36" />
+    <x-show-poster :url="$posterUrl" :alt="$title" class="w-20 h-[7.5rem] sm:w-32 sm:h-48" />
     <div class="min-w-0">
         <p class="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-2">
             @if ($year)
@@ -26,11 +26,9 @@
                 <span>&middot; &#9733; {{ number_format($voteAverage, 1) }}</span>
             @endif
         </p>
-        @if (! empty($genres))
-            <p class="text-xs text-gray-500 dark:text-gray-400 capitalize mt-1">{{ implode(', ', $genres) }}</p>
-        @endif
+        <x-genre-list :genres="$genres" class="mt-1" />
         @if ($overview)
-            <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{{ $overview }}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">{{ $overview }}</p>
         @endif
         <div class="mt-3 flex flex-wrap items-center gap-2">
             {{ $slot }}

@@ -1,6 +1,9 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 
+// Shared with config/app.php (theme_colors), so the PWA chrome matches gray-50/900.
+import paper from './resources/paper.json';
+
 /** @type {import('tailwindcss').Config} */
 export default {
     darkMode: 'class',
@@ -18,25 +21,17 @@ export default {
         extend: {
             colors: {
                 success: '#087941',
-                // gray-50/900 mirror config('app.theme_colors') — change both together.
-                gray: {
-                    50: '#f8fbff',
-                    800: '#192339',
-                    900: '#10182b',
-                },
+                gray: paper,
                 indigo: {
-                    50: '#eff5ff',
-                    100: '#deebff',
-                    300: '#a9c5ff',
-                    400: '#8ab1ff',
-                    500: '#2464e8',
-                    600: '#0949c5',
-                    700: '#0c3da4',
-                    800: '#103283',
+                    50: '#fbefed', 100: '#f4deda', 200: '#ebc1bd',
+                    300: '#efa9a2', 400: '#e98d83', 500: '#b44646',
+                    600: '#92383c', 700: '#782d33', 800: '#60252c',
+                    900: '#482028', 950: '#30161c',
                 },
             },
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                display: ['Georgia', "'Times New Roman'", 'serif'],
             },
             // Fills the 16→20 gap so `h-18` (a w-12 poster at 2:3) exists —
             // Tailwind silently emits nothing for unknown classes.

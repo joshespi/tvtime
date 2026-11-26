@@ -24,12 +24,7 @@ enum TrackingStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::Watching => 'Watching',
-            self::Finished => 'Finished',
-            self::Paused => 'Paused',
-            self::Dropped => 'Dropped',
-        };
+        return $this->name;
     }
 
     /** Whether this status still produces dashboard entries and notifications. */

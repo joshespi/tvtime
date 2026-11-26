@@ -18,7 +18,7 @@ class StatsService
     /** @return array{episodesWatchedTotal: int, episodesWatchedThisYear: int, moviesWatchedTotal: int, moviesWatchedThisYear: int, showStatusCounts: Collection, topGenres: Collection, longestStreak: int, memberSince: Carbon} */
     public function forUser(User $user): array
     {
-        $episodesWatched = $user->watchStatuses()->whereNotNull('watched_at');
+        $episodesWatched = $user->watchStatuses()->watched();
         // Every viewing, not the current watched flag: a rewatch counts again,
         // and a movie re-queued via "Watch again" still counts once.
         $moviesWatched = $user->movieWatches();
@@ -59,14 +59,14 @@ class StatsService
      * "Nothing tracked yet" branch.
      *
      * @param  Collection<int, UserShow>  $userShows  The rows already loaded for the genre tally.
-     * @return Collection<string, int>
+     * @return Collection<string, int> keyed by the status's display label
      */
     private function showStatusCounts(Collection $userShows): Collection
     {
         $counts = $userShows->countBy(fn ($userShow) => $userShow->status->value);
 
         return collect(TrackingStatus::cases())
-            ->mapWithKeys(fn (TrackingStatus $status) => [$status->value => (int) ($counts[$status->value] ?? 0)])
+            ->mapWithKeys(fn (TrackingStatus $status) => [$status->label() => (int) ($counts[$status->value] ?? 0)])
             ->filter(fn (int $count) => $count > 0);
     }
 

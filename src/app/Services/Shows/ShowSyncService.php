@@ -6,6 +6,7 @@ use App\Models\Episode;
 use App\Models\Show;
 use App\Services\Concerns\MapsTmdbMetadata;
 use App\Services\Concerns\RefreshesCastAndTrailer;
+use App\Services\TitleNotFoundException;
 use Illuminate\Support\Facades\Log;
 
 class ShowSyncService
@@ -20,7 +21,7 @@ class ShowSyncService
         $show = $this->tmdb->show($externalId, strict: true);
 
         if (! $show) {
-            throw ShowNotFoundException::forQuery($externalId);
+            throw TitleNotFoundException::for('show', $externalId);
         }
 
         $record = Show::updateOrCreate(['tmdb_id' => $externalId], [

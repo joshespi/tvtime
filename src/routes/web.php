@@ -16,9 +16,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome');
 
+// Static per deploy, so it skips the session (no DB session write per fetch)
+// and lets the browser cache it for a day.
 Route::get('/manifest.webmanifest', function () {
-    return response()->view('manifest')->header('Content-Type', 'application/manifest+json');
-})->name('manifest');
+    return response()->view('manifest')
+        ->header('Content-Type', 'application/manifest+json')
+        ->header('Cache-Control', 'public, max-age=86400');
+})->name('manifest')->withoutMiddleware('web');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', UpNextController::class)->name('dashboard');

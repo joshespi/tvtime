@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use App\Models\Movie;
 use App\Notifications\Concerns\TracksNotificationSubject;
-use App\Support\TmdbImage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -30,24 +29,38 @@ class MovieReleased extends Notification implements ShouldQueue, TracksNotificat
      */
     public function via(object $notifiable): array
     {
-        return ['mail', WebPushChannel::class];
+        // Push only for users with a subscription: otherwise the queued push
+        // job just re-hydrates everything to send nothing.
+        return $notifiable->pushSubscriptions->isNotEmpty()
+            ? ['mail', WebPushChannel::class]
+            : ['mail'];
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject("Released today: {$this->movie->title}")
-            ->line("\"{$this->movie->title}\" is out today.")
+            ->subject($this->headline())
+            ->line($this->body())
             ->action('Open My Movies', route('movies.index'));
     }
 
     public function toWebPush(object $notifiable, self $notification): WebPushMessage
     {
         return (new WebPushMessage)
-            ->title("Released today: {$this->movie->title}")
-            ->body("\"{$this->movie->title}\" is out today.")
-            ->icon($this->movie->posterUrl(TmdbImage::SIZE_ICON) ?? TmdbImage::FALLBACK_ICON)
+            ->title($this->headline())
+            ->body($this->body())
+            ->icon($this->movie->iconUrl())
             ->data(['url' => route('movies.index')])
             ->tag("movie-{$this->movie->id}");
+    }
+
+    private function headline(): string
+    {
+        return "Released today: {$this->movie->title}";
+    }
+
+    private function body(): string
+    {
+        return "\"{$this->movie->title}\" is out today.";
     }
 }

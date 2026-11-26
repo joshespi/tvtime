@@ -42,7 +42,7 @@ class CheckMovieReleases extends Command
         $watchlistedByMovie = UserMovie::query()
             ->whereIn('movie_id', $releasingToday->pluck('id'))
             ->inWatchlist()
-            ->with('user')
+            ->with('user.pushSubscriptions') // read by the notification's via()
             ->get()
             ->groupBy('movie_id');
 

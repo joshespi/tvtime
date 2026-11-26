@@ -3,8 +3,8 @@
 namespace Tests\Unit\Services;
 
 use App\Models\Show;
-use App\Services\Shows\ShowNotFoundException;
 use App\Services\Shows\ShowSyncService;
+use App\Services\TitleNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\Concerns\FakesTmdb;
@@ -51,7 +51,7 @@ class ShowSyncServiceTest extends TestCase
     {
         Http::fake(['api.themoviedb.org/3/tv/*' => Http::response(null, 404)]);
 
-        $this->expectException(ShowNotFoundException::class);
+        $this->expectException(TitleNotFoundException::class);
 
         $this->service->store('missing');
     }

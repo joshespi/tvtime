@@ -38,7 +38,7 @@ class Movie extends Model
         return $query->whereBetween('release_date', [$from->copy()->startOfDay(), $to->copy()->endOfDay()]);
     }
 
-    /** The catalog detail page — movies have no page of their own, unlike shows. */
+    /** The catalog detail page — movies have no page of their own, unlike shows (see Show::detailUrl()). */
     public function detailUrl(): string
     {
         return route('catalog.show', ['type' => 'movie', 'tmdbId' => $this->tmdb_id]);

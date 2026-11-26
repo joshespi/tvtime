@@ -6,6 +6,7 @@ use App\Models\Movie;
 use App\Models\User;
 use App\Notifications\MovieReleased;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use NotificationChannels\WebPush\PushSubscription;
 use NotificationChannels\WebPush\WebPushChannel;
 use Tests\TestCase;
 
@@ -13,11 +14,20 @@ class MovieReleasedTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_via_uses_mail_and_web_push(): void
+    public function test_via_uses_mail_and_web_push_for_a_subscribed_user(): void
     {
         $movie = Movie::factory()->create();
+        $user = User::factory()->make()->setRelation('pushSubscriptions', collect([new PushSubscription]));
 
-        $this->assertSame(['mail', WebPushChannel::class], (new MovieReleased($movie))->via(User::factory()->make()));
+        $this->assertSame(['mail', WebPushChannel::class], (new MovieReleased($movie))->via($user));
+    }
+
+    public function test_via_skips_web_push_without_a_subscription(): void
+    {
+        $movie = Movie::factory()->create();
+        $user = User::factory()->make()->setRelation('pushSubscriptions', collect());
+
+        $this->assertSame(['mail'], (new MovieReleased($movie))->via($user));
     }
 
     public function test_to_mail_includes_the_movie_title(): void

@@ -65,7 +65,7 @@ class UserShow extends Model
         return WatchStatus::query()
             ->where('user_id', $this->user_id)
             ->where('episode_id', $episode->id)
-            ->whereNotNull('watched_at')
+            ->watched()
             ->exists();
     }
 
